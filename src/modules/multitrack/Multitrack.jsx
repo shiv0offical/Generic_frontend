@@ -27,7 +27,7 @@ export default function Multitrack() {
       // const vehicleRes = await ApiService.get(APIURL.VEHICLE);
 
       if (vehicleRes?.success) {
-        dispatch(fetchVehicles(vehicleRes));
+        dispatch(fetchVehicles(params));
 
         // Now that vehicles are available (in vehicleRes), use it directly
         const imeiNumbers = vehicleRes.data.map(
