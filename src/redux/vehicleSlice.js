@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { ApiService } from '../services';
 import { APIURL } from '../constants';
+import { ApiService } from '../services';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 const initialState = {
   vehicles: { data: [] },
@@ -14,7 +14,7 @@ const getOneHourAgo = () => Date.now() - 60 * 60 * 1000;
 
 export const fetchVehicles = createAsyncThunk('vehicles/fetchVehicles', async (params = {}, thunkAPI) => {
   try {
-    const response = await ApiService.get(APIURL.VEHICLE,params);
+    const response = await ApiService.get(APIURL.VEHICLE, params);
     return response;
   } catch (err) {
     return thunkAPI.rejectWithValue(err.message);
@@ -22,7 +22,7 @@ export const fetchVehicles = createAsyncThunk('vehicles/fetchVehicles', async (p
 });
 
 export const vehicleReducer = createSlice({
-  name: 'vehicles',
+  name: 'vehicle',
   initialState,
   reducers: {
     fetchLastVehicles: (state, action) => {
@@ -76,7 +76,7 @@ export const vehicleReducer = createSlice({
         state.loading = true;
       })
       .addCase(fetchVehicles.fulfilled, (state, action) => {
-        const vehicles = action.payload?.data?.vehicles || [];
+        const vehicles = action.payload?.data?.vehicles || action.payload?.data || action.payload || [];
         state.vehicles.data = vehicles;
         state.newDevices = vehicles.map((v) => ({ imei_number: v.imei_number }));
         state.loading = false;

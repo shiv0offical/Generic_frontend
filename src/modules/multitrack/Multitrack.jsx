@@ -1,80 +1,45 @@
-import { useEffect, useState } from "react";
-import MapComponent from "./components/MapComponent";
-import MheStatusPanel from "./components/MheStatusPanel";
-import TrackingPanel from "./components/TrackingPanel";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchLastVehicles, fetchVehicles } from "../../redux/vehicleSlice";
-import { ApiService, Lastvehicledata } from "../../services";
-// import { connectSocket, disconnectSocket } from "../../socket/socketService";
-import { APIURL } from "../../constants";
-import { useLocation } from "react-router-dom";
+import { APIURL } from '../../constants';
+import { useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import MapComponent from './components/MapComponent';
+import TrackingPanel from './components/TrackingPanel';
+import MheStatusPanel from './components/MheStatusPanel';
+import { ApiService, Lastvehicledata } from '../../services';
+import { fetchLastVehicles, fetchVehicles } from '../../redux/vehicleSlice';
 
 export default function Multitrack() {
   const [isMheStatusVisible, setIsMheStatusVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-
   const dispatch = useDispatch();
   const location = useLocation();
 
-  const handleFetchVehicles = async () => {
-    const token = localStorage.getItem("authToken");
-    const params = {
-      company_id: localStorage.getItem("company_id"),
-    };
-    if (token) {
-      // First fetch the vehicle list
-      const vehicleRes = await ApiService.get(APIURL.ASSIGNSEAT,params);
-      // const vehicleRes = await ApiService.get(APIURL.VEHICLE);
-
-      if (vehicleRes?.success) {
-        dispatch(fetchVehicles(params));
-
-        // Now that vehicles are available (in vehicleRes), use it directly
-        const imeiNumbers = vehicleRes.data.map(
-          (vehicle) => vehicle.imei_number
-        );
-
-        const vehicleDataArray = [];
-
-        for (let imei of imeiNumbers) {
-          try {
-            // const url = `lastvehicledata?imei=${imei}`;
-            // const data = await Lastvehicledata.get(url);
-            const data = await Lastvehicledata.get(
-              `${APIURL.LASTVEHICLEDATA}?imei=${imei}`
-            );
-            if (data?.success) {
-              // console.log(`Data for IMEI ${imei}:`, data);
-              vehicleDataArray.push(data);
-            } else {
-              console.error(`Failed to fetch data for IMEI ${imei}`);
-            }
-          } catch (error) {
-            console.error(`Error fetching data for IMEI ${imei}:`, error);
-          }
-        }
-
-        if (vehicleDataArray.length > 0) {
-          dispatch(fetchLastVehicles(vehicleDataArray));
-        } else {
-          console.error("No valid data to dispatch for last vehicles");
-        }
-      } else {
-        console.error("Failed to fetch vehicles");
-      }
-    }
-  };
-
   useEffect(() => {
     const fetchData = async () => {
-      await handleFetchVehicles();
+      const token = localStorage.getItem('authToken');
+      const company_id = localStorage.getItem('company_id');
+      if (!token || !company_id) return;
+
+      const params = { company_id };
+      dispatch(fetchVehicles(params));
+
+      const vehicleRes = await ApiService.get(APIURL.ASSIGNSEAT, params);
+      if (!vehicleRes?.success || !Array.isArray(vehicleRes.data)) return;
+
+      const imeis = vehicleRes.data.map((v) => v.imei_number).filter(Boolean);
+      if (!imeis.length) return;
+
+      const lastData = await Promise.all(
+        imeis.map((imei) => Lastvehicledata.get(`${APIURL.LASTVEHICLEDATA}?imei=${imei}`).catch(() => null))
+      );
+      const validData = lastData.filter((d) => d && d.success);
+      if (validData.length) dispatch(fetchLastVehicles(validData));
     };
 
     fetchData();
-  }, [location.pathname]);
+  }, [dispatch, location.pathname]);
 
   const handleRightPanel = (vehicle) => {
-    // If same vehicle is clicked again, close the panel
     if (isMheStatusVisible && vehicle?.imei === selectedVehicle?.imei) {
       setIsMheStatusVisible(false);
       setSelectedVehicle(null);
@@ -82,23 +47,19 @@ export default function Multitrack() {
       setSelectedVehicle(vehicle);
       setIsMheStatusVisible(true);
     }
-    // setSelectedVehicle(vehicle);
-    // setIsMheStatusVisible(true);
   };
 
   return (
-    <>
-      <div className="relative flex-1 h-screen rounded-md">
-        <TrackingPanel handleRightPanel={handleRightPanel} />
-        <MapComponent selectedVehicle={selectedVehicle} />
-        {isMheStatusVisible && (
-          <MheStatusPanel
-            handleRightPanel={handleRightPanel}
-            isShowPanel={isMheStatusVisible}
-            vehicle={selectedVehicle}
-          />
-        )}
-      </div>
-    </>
+    <div className='relative flex-1 h-screen rounded-md'>
+      <TrackingPanel handleRightPanel={handleRightPanel} />
+      <MapComponent selectedVehicle={selectedVehicle} />
+      {isMheStatusVisible && (
+        <MheStatusPanel
+          handleRightPanel={handleRightPanel}
+          isShowPanel={isMheStatusVisible}
+          vehicle={selectedVehicle}
+        />
+      )}
+    </div>
   );
 }

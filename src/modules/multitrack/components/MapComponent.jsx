@@ -1,15 +1,13 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import { useSelector } from "react-redux";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import { useSelector } from 'react-redux';
 
-import LocationPinGreenSVG from "../../../assets/greenLocationPin.svg";
-import LocationPinRedSVG from "../../../assets/redLocationPin.svg";
-import LocationPinOrangeSVG from "../../../assets/orangeLocationPin.svg";
-import LocationPinBlueSVG from "../../../assets/blueLocationPin.svg";
+import LocationPinGreenSVG from '../../../assets/greenLocationPin.svg';
+import LocationPinRedSVG from '../../../assets/redLocationPin.svg';
+import LocationPinOrangeSVG from '../../../assets/orangeLocationPin.svg';
+import LocationPinBlueSVG from '../../../assets/blueLocationPin.svg';
 
-
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 const redMapIcon = new L.Icon({
   iconUrl: LocationPinRedSVG,
@@ -68,59 +66,56 @@ const MapComponent = ({ selectedVehicle }) => {
 
   useEffect(() => {
     const updatedDevices = vehicles?.data
-      ? vehicles?.data?.filter((vehicleItem)=> 'latitude' in vehicleItem).map((vehicle, index) => {
-        // console.log("🚀 ~ ?vehicles?.data?.map ~ vehicle: 70707", JSON.stringify(vehicle))
-        // const ioData = vehicle?.ioElements
-        //   ? JSON.parse(vehicle.ioElements)
-        //   : [];
+      ? vehicles?.data
+          ?.filter((vehicleItem) => 'latitude' in vehicleItem)
+          .map((vehicle, index) => {
+            // console.log("🚀 ~ ?vehicles?.data?.map ~ vehicle: 70707", JSON.stringify(vehicle))
+            // const ioData = vehicle?.ioElements
+            //   ? JSON.parse(vehicle.ioElements)
+            //   : [];
 
-        const ioData = Array.isArray(vehicle.ioElements)
-          ? vehicle.ioElements
-          : [];
+            const ioData = Array.isArray(vehicle.ioElements) ? vehicle.ioElements : [];
 
-        // console.log("🚀 ~ :61 ~ ?vehicles?.data?.map ~ ioData:", ioData);
+            // console.log("🚀 ~ :61 ~ ?vehicles?.data?.map ~ ioData:", ioData);
 
-        const ignition = ioData.find((item) => item.id === 239);
-        const movement = ioData.find((item) => item.id === 240);
-        const localTime = !isNaN(new Date(vehicle?.timestamp))
-          ? new Date(vehicle.timestamp).toISOString()
-          : "";
-        // console.log("🚀 ~ ?vehicles?.data?.map ~ localTime:", localTime)
+            const ignition = ioData.find((item) => item.id === 239);
+            const movement = ioData.find((item) => item.id === 240);
+            const localTime = !isNaN(new Date(vehicle?.timestamp)) ? new Date(vehicle.timestamp).toISOString() : '';
+            // console.log("🚀 ~ ?vehicles?.data?.map ~ localTime:", localTime)
 
-        return {
-          id: vehicle.id,
-          name: vehicle.vehicle_name,
-          // timestamp: new Date().toLocaleString(),
-          lat: vehicle.latitude || 0,
-          lng: vehicle.longitude || 0,
-          // address: "Location not available",
-          locationIcon: colorOfDot(ignition.value, movement.value, localTime),
-        };
-      })
+            return {
+              id: vehicle.id,
+              name: vehicle.vehicle_name,
+              // timestamp: new Date().toLocaleString(),
+              lat: vehicle.latitude || 0,
+              lng: vehicle.longitude || 0,
+              // address: "Location not available",
+              locationIcon: colorOfDot(ignition.value, movement.value, localTime),
+            };
+          })
       : [];
 
     setDevices(updatedDevices);
   }, [vehicles.data]);
 
-  
   // console.log("vehicles", vehicles.data);
 
   const colorOfDot = (ignition, movement, time) => {
     // console.log('ignition', ignition, 'movement', movement, 'time', time, 'vehicle_name', vehicle_name);
-    
+
     if (ignition && movement && !checkifTimeisOneHourOlder(time)) {
-      return greenMapIcon
+      return greenMapIcon;
     }
     if (ignition && !movement && !checkifTimeisOneHourOlder(time)) {
-      return yelllowMapIcon
+      return yelllowMapIcon;
     }
     if (!ignition && !movement && !checkifTimeisOneHourOlder(time)) {
-      return redMapIcon
+      return redMapIcon;
     }
     if (checkifTimeisOneHourOlder(time)) {
-      return blueMapIcon
+      return blueMapIcon;
     }
-  }
+  };
 
   const checkifTimeisOneHourOlder = (providedDate) => {
     const now = new Date();
@@ -130,7 +125,7 @@ const MapComponent = ({ selectedVehicle }) => {
 
     // Check for invalid date
     if (isNaN(dateToCheck.getTime())) {
-      console.error("Invalid date provided.");
+      console.error('Invalid date provided.');
       return false;
     }
 
@@ -138,17 +133,15 @@ const MapComponent = ({ selectedVehicle }) => {
     const oneHourInMs = 60 * 60 * 1000;
 
     return diffInMs > oneHourInMs;
-  }
+  };
 
   useEffect(() => {
     if (!vehicles?.data) return;
 
     vehicles.data.forEach((vehicle) => {
-      const ioData = Array.isArray(vehicle.ioElements)
-        ? vehicle.ioElements
-        : [];
+      const ioData = Array.isArray(vehicle.ioElements) ? vehicle.ioElements : [];
 
-      const movement = ioData.find((item) => item.id === "240");
+      const movement = ioData.find((item) => item.id === '240');
 
       if (movement?.value === 1) {
         const marker = markerRefs.current[vehicle.id];
@@ -159,10 +152,7 @@ const MapComponent = ({ selectedVehicle }) => {
           // marker.setLatLng(newLatLng);
 
           // ✅ Compare previous and new coordinates before updating
-          if (
-            currentLatLng.lat !== newLatLng.lat ||
-            currentLatLng.lng !== newLatLng.lng
-          ) {
+          if (currentLatLng.lat !== newLatLng.lat || currentLatLng.lng !== newLatLng.lng) {
             marker.setLatLng(newLatLng);
 
             // console.log(
@@ -189,15 +179,10 @@ const MapComponent = ({ selectedVehicle }) => {
   }, [selectedVehicle]);
 
   return (
-    <div className="h-screen w-full">
-      <MapContainer
-        center={[20.5937, 78.9629]}
-        zoom={5}
-        className="w-full h-full"
-        ref={mapRef}
-      >
+    <div className='h-screen w-full'>
+      <MapContainer center={[20.5937, 78.9629]} zoom={5} className='w-full h-full' ref={mapRef}>
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {devices.map((device) => (
@@ -205,8 +190,7 @@ const MapComponent = ({ selectedVehicle }) => {
             key={device.id}
             position={[device.lat, device.lng]}
             icon={device.locationIcon}
-            ref={(ref) => (markerRefs.current[device.id] = ref)}
-          >
+            ref={(ref) => (markerRefs.current[device.id] = ref)}>
             <Popup>
               <div>
                 <strong>{device.name}</strong>

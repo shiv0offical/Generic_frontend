@@ -1,6 +1,14 @@
 import { TextField } from '@mui/material';
+import { useEffect, useState } from 'react';
 
 function CommonSearch({ searchQuery = '', setSearchQuery }) {
+  const [value, setValue] = useState(searchQuery);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(value), 500);
+    return () => clearTimeout(t);
+  }, [value, setSearchQuery]);
+
   return (
     <div className='flex justify-end bg-white'>
       <TextField
@@ -8,8 +16,8 @@ function CommonSearch({ searchQuery = '', setSearchQuery }) {
         variant='outlined'
         size='small'
         sx={{ width: 300 }}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        value={searchQuery}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
       />
     </div>
   );
