@@ -53,6 +53,7 @@ function Employee() {
       boardingTime: '10:00 AM',
       latitude: data.latitude,
       longitude: data.longitude,
+      boardingPoint:data.boarding_address,
       address: data.address,
       status: data.status?.toLowerCase() === 'active' || data.status === 'Active' ? 'Active' : 'Inactive',
     }));

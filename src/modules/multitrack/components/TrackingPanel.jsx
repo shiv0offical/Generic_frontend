@@ -13,48 +13,20 @@ const TrackingPanel = ({ handleRightPanel }) => {
 
   const { vehicles, newDevices } = useSelector((state) => state.vehicle);
 
-  //from redux
   const { runningDevices, parkedDevices, idelDevices, devices, activeTab, offlineVehicleData, isTrackShow } =
     useSelector((state) => state.multiTrackStatus);
 
   useEffect(() => {
-    if (vehicles.data?.length > 0) {
-      dispatch(setProcessedVehicles(vehicles.data));
-    }
-  }, [vehicles]);
+    if (vehicles.data?.length > 0) dispatch(setProcessedVehicles(vehicles.data));
+  }, [vehicles, dispatch]);
 
   const vehicleStatus = [
-    {
-      label: 'Running',
-      count: runningDevices.length,
-      bg: '#00800026',
-      color: 'green',
-    },
-    {
-      label: 'Idle',
-      count: idelDevices.length,
-      bg: '#FFC10726',
-      color: '#ce9a00',
-    },
-    {
-      label: 'Parked',
-      count: parkedDevices.length,
-      bg: '#FF000026',
-      color: 'red',
-    },
-    {
-      label: 'Offline',
-      count: offlineVehicleData.length,
-      bg: '#000DFF26',
-      color: 'blue',
-    },
+    { label: 'Running', count: runningDevices.length, bg: '#00800026', color: 'green' },
+    { label: 'Idle', count: idelDevices.length, bg: '#FFC10726', color: '#ce9a00' },
+    { label: 'Parked', count: parkedDevices.length, bg: '#FF000026', color: 'red' },
+    { label: 'Offline', count: offlineVehicleData.length, bg: '#000DFF26', color: 'blue' },
     { label: 'New', count: newDevices.length, bg: '#ececec', color: 'gray' },
-    {
-      label: 'All',
-      count: vehicles.data ? vehicles.data.length : devices.length,
-      bg: '#d9d9d9',
-      color: 'black',
-    },
+    { label: 'All', count: vehicles.data ? vehicles.data.length : devices.length, bg: '#d9d9d9', color: 'black' },
   ];
 
   const filteredDevices = useMemo(() => {
@@ -74,7 +46,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
       default:
         return [];
     }
-  }, [activeTab, runningDevices, idelDevices, parkedDevices, newDevices, devices]);
+  }, [activeTab, runningDevices, idelDevices, parkedDevices, newDevices, devices, offlineVehicleData]);
 
   const handleSearch = (e) => {
     let value = e.target.value;
@@ -92,16 +64,11 @@ const TrackingPanel = ({ handleRightPanel }) => {
   return (
     <>
       <div
-        className={`absolute transition-all top-0 ${
-          isTrackShow ? '-left-[452px]' : 'left-0'
-        } w-[452px] rounded-md bg-white h-[calc(100vh-60px)] p-3 z-[99999]`}>
+        className={`absolute transition-all top-0 rounded-md bg-white h-[calc(100vh-60px)] p-3 z-[99999] 
+          ${isTrackShow ? '-left-[452px]' : 'left-0'} w-[452px]`}>
         <div
           className='absolute top-10 -right-5 h-14 bg-[#FFF] cursor-pointer rounded-tr-lg rounded-br-lg text-4xl flex items-center justify-center'
           onClick={() => dispatch(setIsTrackShow(!isTrackShow))}>
-          {/* <div
-          className="absolute top-10 -right-5 h-14 overflow-scroll bg-[#FFF] cursor-pointer rounded-tr-lg rounded-br-lg text-4xl flex items-center justify-center"
-          onClick={() => setIsTrackShow(!isTrackShow)}
-        > */}
           {isTrackShow ? <ArrowRightIcon /> : <ArrowLeftIcon />}
         </div>
         <div className='w-full rounded-sm overflow-hidden mb-2 flex justify-between items-center relative'>

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet-routing-machine";
-import { useMap } from "react-leaflet";
-import car from "../../assets/logo.png";
+import { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet-routing-machine';
+import { useMap } from 'react-leaflet';
+import car from '../../assets/logo.png';
 
 const RoutingMatching = ({ coordinates, speed, isPlaying }) => {
   const map = useMap();
@@ -32,16 +32,14 @@ const RoutingMatching = ({ coordinates, speed, isPlaying }) => {
       setRouteReady(true);
     };
 
-    routingControl.on("routesfound", handleRoutesFound);
+    routingControl.on('routesfound', handleRoutesFound);
 
     // Hide routing panel
-    const controlContainer = document.querySelector(
-      ".leaflet-top.leaflet-right"
-    );
-    if (controlContainer) controlContainer.style.display = "none";
+    const controlContainer = document.querySelector('.leaflet-top.leaflet-right');
+    if (controlContainer) controlContainer.style.display = 'none';
 
     return () => {
-      routingControl.off("routesfound", handleRoutesFound);
+      routingControl.off('routesfound', handleRoutesFound);
 
       if (movingMarkerRef.current) {
         map.removeLayer(movingMarkerRef.current);
@@ -60,12 +58,9 @@ const RoutingMatching = ({ coordinates, speed, isPlaying }) => {
     });
 
     if (movingMarkerRef.current === null) {
-      const marker = L.marker(
-        routeCoordsRef.current[currentPositionRef.current],
-        { icon: customIcon }
-      )
+      const marker = L.marker(routeCoordsRef.current[currentPositionRef.current], { icon: customIcon })
         .addTo(map)
-        .bindPopup("", { closeButton: false, autoClose: false })
+        .bindPopup('', { closeButton: false, autoClose: false })
         .openPopup();
       movingMarkerRef.current = marker;
     }

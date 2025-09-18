@@ -3,15 +3,14 @@ import { useState, useEffect } from 'react';
 import { APIURL } from '../../../constants';
 import { ApiService } from '../../../services';
 import EditIcon from '@mui/icons-material/Edit';
-import { CircularProgress } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import CommonSearch from '../../../components/CommonSearch';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import { fetchVehicleGeoFence } from '../../../redux/geofenceSlice';
-import { Table, TableBody, TableCell, TableContainer } from '@mui/material';
-import { TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
+import { TableHead, TablePagination, TableRow, CircularProgress } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableSortLabel } from '@mui/material';
 
 const columns = [
   { key: 'busName', header: 'Bus Name' },
@@ -27,90 +26,62 @@ function Geofence() {
   const [limit, setLimit] = useState(10);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
-  const [vehicles, setVehicles] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const { vehicleGeoFence, loading, error } = useSelector((s) => s.geofence);
 
-  const { vehicleGeoFence, loading, error } = useSelector((state) => state.geofence);
+  const geofences = Array.isArray(vehicleGeoFence?.geofences) ? vehicleGeoFence.geofences : [];
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await ApiService.get(APIURL.VEHICLE);
-        setVehicles(res?.success && Array.isArray(res.data?.vehicles) ? res.data?.vehicles : []);
-        dispatch(fetchVehicleGeoFence({ search: searchQuery, page: page + 1 || 1, limit }));
-      } catch (error) {
-        dispatch({ type: 'geofence/fetchVehicleGeoFence/rejected', payload: error.message });
-      }
-    })();
+    dispatch(fetchVehicleGeoFence({ search: searchQuery, page: page + 1, limit }));
   }, [dispatch, searchQuery, page, limit]);
 
-  const processedGeoFenceData =
-    vehicleGeoFence?.map((d, i) => {
-      const v = d.vehicle || vehicles.find((v) => v.id === d.vehicle_id);
-      return {
-        id: i + 1,
-        geofenceID: d.id,
-        vehicleID: d.vehicle_id,
-        typeID: d.type,
-        busName: v?.vehicle_name || v?.vehicle_number || '-',
-        geofenceName: d.geofence_name,
-        geofenceType: d.type || '-',
-        coordinates: d.coordinates,
-        color: d.color,
-        location: d.location,
-        createdAt: dayjs(d.created_at).format('YYYY-MM-DD'),
-      };
-    }) || [];
+  const data = geofences.map((d, i) => ({
+    id: page * limit + i + 1,
+    geofenceID: d.id,
+    busName: d.vehicle?.vehicle_name || d.vehicle?.vehicle_number || '-',
+    geofenceName: d.geofence_name,
+    geofenceType: d.type || '-',
+    createdAt: dayjs(d.created_at).format('YYYY-MM-DD'),
+    row: d,
+  }));
 
-  const handleSort = (columnKey) => {
-    const isAsc = orderBy === columnKey && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(columnKey);
+  const handleSort = (key) => {
+    setOrder(orderBy === key && order === 'asc' ? 'desc' : 'asc');
+    setOrderBy(key);
   };
 
-  const sortedData = [...processedGeoFenceData].sort((a, b) => {
-    if (!orderBy) return 0;
-    const valueA = a[orderBy];
-    const valueB = b[orderBy];
+  const sorted = orderBy
+    ? [...data].sort((a, b) => {
+        const va = a[orderBy],
+          vb = b[orderBy];
+        if (typeof va === 'string') return order === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        return order === 'asc' ? va - vb : vb - va;
+      })
+    : data;
 
-    if (typeof valueA === 'string')
-      return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    return order === 'asc' ? valueA - valueB : valueB - valueA;
-  });
+  const paginated = sorted;
 
-  const paginatedData = sortedData.slice(page * limit, page * limit + limit);
-
-  const handleView = (row) => {
-    navigate(`/management/geofence/view`, { state: { mode: 'view', rowData: row } });
-  };
-
-  const handleEdit = (row) => {
-    navigate('/management/geofence/edit', { state: { mode: 'edit', rowData: row } });
-  };
-
+  const handleView = (row) => navigate('/management/geofence/view', { state: { mode: 'view', rowData: row } });
+  const handleEdit = (row) => navigate('/management/geofence/edit', { state: { mode: 'edit', rowData: row } });
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this Geo Fence ?')) return;
-
     try {
-      const response = await ApiService.delete(`${APIURL.GEOFENCE}/${id}`);
-      if (response.success) {
-        alert(response.message);
-        dispatch(fetchVehicleGeoFence());
-      } else {
-        console.error(response.message);
-        alert('Failed to delete Geo Fence');
+      const res = await ApiService.delete(`${APIURL.GEOFENCE}/${id}`);
+      alert(res.message || (res.success ? 'Deleted' : 'Failed to delete Geo Fence'));
+      if (res.success) {
+        dispatch(fetchVehicleGeoFence({ search: searchQuery, page: page + 1, limit }));
       }
-    } catch (error) {
-      console.error('Delete error:', error);
+    } catch {
       alert('An error occurred while deleting.');
     }
   };
+
+  const totalCount = vehicleGeoFence?.pagination?.total || data.length;
 
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
         <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Geofence</h1>
-
         <div className='flex gap-x-4'>
           <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           <Link to='/management/geofence/create'>
@@ -118,10 +89,9 @@ function Geofence() {
           </Link>
         </div>
       </div>
-
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
         {error && <div className='text-red-700'>Error: {error}</div>}
-        <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
+        <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
@@ -147,14 +117,14 @@ function Geofence() {
                     <CircularProgress size={28} className='my-4' />
                   </TableCell>
                 </TableRow>
-              ) : paginatedData.length === 0 ? (
+              ) : paginated.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length + 1} align='center'>
                     No data found
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedData.map((row) => (
+                paginated.map((row) => (
                   <TableRow key={row.id}>
                     {columns.map((col) => (
                       <TableCell key={col.key}>{row[col.key]}</TableCell>
@@ -163,12 +133,12 @@ function Geofence() {
                       <div className='flex justify-center gap-3 text-white'>
                         <button
                           className='bg-blue-400 py-1.5 p-2 rounded-md cursor-pointer'
-                          onClick={() => handleView(row)}>
+                          onClick={() => handleView(row.row)}>
                           <RemoveRedEyeIcon fontSize='10px' />
                         </button>
                         <button
                           className='bg-green-400 py-1.5 p-2 rounded-md cursor-pointer'
-                          onClick={() => handleEdit(row)}>
+                          onClick={() => handleEdit(row.row)}>
                           <EditIcon fontSize='10px' />
                         </button>
                         <button
@@ -187,12 +157,12 @@ function Geofence() {
         <TablePagination
           rowsPerPageOptions={[10, 15, 20, 25, 30]}
           component='div'
-          count={processedGeoFenceData.length}
+          count={totalCount}
           rowsPerPage={limit}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}
           onRowsPerPageChange={(e) => {
-            setLimit(parseInt(e.target.value, 10));
+            setLimit(+e.target.value);
             setPage(0);
           }}
         />

@@ -27,7 +27,6 @@ function EmployeeForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const rowData = location.state;
-  // console.log(rowData);
 
   const fileInputRef = useRef(null);
   const [addressOnSearch, setAddressOnSearch] = useState([]);
@@ -63,8 +62,8 @@ function EmployeeForm() {
     queryParams: { company_id: companyID },
     dataKey: "departments",
     labelSelector: (d) => {
-    return d?.department_name ?? "";
-  },
+      return d?.department_name ?? "";
+    },
     valueSelector: (d) => d.id,
   });
 
@@ -88,7 +87,7 @@ function EmployeeForm() {
     refetch: routeRefetch,
   } = useDropdownOpt({
     apiUrl: APIURL.VEHICLE_ROUTE,
-    dataKey:"routes",
+    dataKey: "routes",
     queryParams: { company_id: companyID },
     labelSelector: (d) => `${d.name}`,
     valueSelector: (d) => d.id,
@@ -101,11 +100,11 @@ function EmployeeForm() {
     refetch: bordingRefetch,
   } = useDropdownOpt({
     apiUrl: formVal.vehicleRoute
-    ? `${APIURL.VEHICLE_ROUTE}/${formVal.vehicleRoute}/stops`
-    : null,
+      ? `${APIURL.VEHICLE_ROUTE}/${formVal.vehicleRoute}/stops`
+      : null,
     labelSelector: (d) => `${d.address}`,
     valueSelector: (d) => d.id,
-    dataKey:"stops"
+    dataKey: "stops",
   });
 
   const handleChange = (e) => {
@@ -135,17 +134,17 @@ function EmployeeForm() {
         const [firstName = "", lastName = ""] =
           data.employeeName?.split(" ") || [];
 
-          const selectedAddress = data.address
-        ? {
-            label: data.address,
-            value: data.latitude + "-" + data.longitude, // unique key
-            otherData: {
-              display_name: data.address,
-              lat: data.latitude,
-              lon: data.longitude,
-            },
-          }
-        : null;
+        const selectedAddress = data.address
+          ? {
+              label: data.address,
+              value: data.latitude + "-" + data.longitude, // unique key
+              otherData: {
+                display_name: data.address,
+                lat: data.latitude,
+                lon: data.longitude,
+              },
+            }
+          : null;
 
         setFormVal({
           firstName,
@@ -167,7 +166,7 @@ function EmployeeForm() {
           latitude: data.latitude || "",
           longitude: data.longitude || "",
         });
-          setSelectedAddressOption(selectedAddress);
+        setSelectedAddressOption(selectedAddress);
       }
     }
   }, [rowData]);
@@ -188,14 +187,13 @@ function EmployeeForm() {
       date_of_birth: formVal.dateOfBirth,
       gender: formVal.selectedGender,
       vehicle_route_id: formVal.vehicleRoute,
-      boardingPoint:formVal.boardingPoint,
+      boarding_address: formVal.boardingPoint,
       profile_img: formVal.profilePhoto?.name,
       latitude: parseFloat(formVal.latitude),
       longitude: parseFloat(formVal.longitude),
       address: formVal.address,
       boarding_latitude: parseFloat(formVal.latitude),
       boarding_longitude: parseFloat(formVal.longitude),
-      boarding_address: formVal.address,
       status_id: 1,
     };
 
@@ -680,7 +678,7 @@ function EmployeeForm() {
                       };
                     })}
                     isOptionEqualToValue={(option, value) =>
-                      option.value === value
+                      option?.value === value?.value
                     }
                     getOptionKey={(option) => option.value}
                     getOptionLabel={(option) => option.label}
@@ -708,13 +706,22 @@ function EmployeeForm() {
                       }, 500);
                     }}
                     value={selectedAddressOption}
-                    onChange={(event, value) => {
-                      if (value) {
+                    onChange={(event, newValue) => {
+                      setSelectedAddressOption(newValue);
+                      if (newValue) {
                         setFormVal((prev) => ({
                           ...prev,
-                          address: value.otherData.display_name,
-                          latitude: value.otherData.lat,
-                          longitude: value.otherData.lon,
+                          address: newValue.otherData.display_name,
+                          latitude: newValue.otherData.lat,
+                          longitude: newValue.otherData.lon,
+                        }));
+                      } else {
+                        // If cleared
+                        setFormVal((prev) => ({
+                          ...prev,
+                          address: "",
+                          latitude: "",
+                          longitude: "",
                         }));
                       }
                     }}

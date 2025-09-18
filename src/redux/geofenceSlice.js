@@ -120,7 +120,7 @@ const geofenceSliceReducer = createSlice({
 export const fetchVehicleGeoFence = createAsyncThunk('geofence/fetchVehicleGeoFence', async (params, thunkAPI) => {
   try {
     const res = await ApiService.get('geofence', params);
-    return res?.data?.geofences || res?.data || [];
+    return res?.data || [];
   } catch (error) {
     return thunkAPI.rejectWithValue(error.message);
   }

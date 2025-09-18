@@ -1,22 +1,13 @@
 import authMiddleware from '../redux/middleware/authMiddleware';
-// const BASE_URL = import.meta.env.VITE_BASE_URL;
-
-// const buildUrl = (baseUrl, params) => {
-//   const query = params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-//   return BASE_URL + baseUrl + query;
-// };
 
 const resolveBaseUrl = () => {
-  return window.location.pathname.startsWith('/dashboard') || window.location.pathname.startsWith('/multitrack')
+  return window.location.pathname.startsWith('/dashboard')
     ? import.meta.env.VITE_BASE_URL_OLD
     : import.meta.env.VITE_BASE_URL;
 };
 
 const buildUrl = (baseUrl, params) => {
-  const query =
-    params && Object.keys(params).length
-      ? '?' + new URLSearchParams(params).toString()
-      : '';
+  const query = params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
   return resolveBaseUrl() + baseUrl + query;
 };
 

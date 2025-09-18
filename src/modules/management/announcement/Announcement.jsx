@@ -25,6 +25,7 @@ function Announcement() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [totalCount, setTotalCount] = useState(0);
 
   const handleSort = (columnKey) => {
     const isAsc = orderBy === columnKey && order === 'asc';
@@ -35,12 +36,12 @@ function Announcement() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const params = { search: searchQuery, page: page + 1 || 1, limit };
+      const params = { search: searchQuery, page: page + 1, limit };
       const response = await ApiService.get(APIURL.ANNOUNCEMENT, params);
 
       if (response?.success) {
         const formatData = (response.data.announcements || []).map((item, idx) => ({
-          id: idx + 1,
+          id: page * limit + idx + 1,
           announcementId: item.id,
           senderName: item.senderName,
           employeeName: item.employeeName,
@@ -49,12 +50,18 @@ function Announcement() {
           createdOn: dayjs(item.created_at).format('YYYY-MM-DD hh:mm A'),
         }));
         setAnnouncements(formatData);
+        setTotalCount(
+          typeof response.data?.pagination?.total === 'number'
+            ? response.data.pagination.total
+            : (response.data.announcements || []).length
+        );
       } else {
-        alert(response.message || 'Failed to fetch announcements');
+        setAnnouncements([]);
+        setTotalCount(0);
       }
     } catch (error) {
-      console.error('API call failed:', error?.message || error);
-      alert('Something went wrong while fetching announcements data');
+      setAnnouncements([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -63,19 +70,21 @@ function Announcement() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line
-  }, []);
+  }, [searchQuery, page, limit]);
 
   const sortedData = orderBy
     ? [...announcements].sort((a, b) => {
         const valueA = a[orderBy];
         const valueB = b[orderBy];
-        if (typeof valueA === 'string')
+        if (typeof valueA === 'string' && typeof valueB === 'string')
           return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-        return order === 'asc' ? valueA - valueB : valueB - valueA;
+        if (typeof valueA === 'number' && typeof valueB === 'number')
+          return order === 'asc' ? valueA - valueB : valueB - valueA;
+        return 0;
       })
     : announcements;
 
-  const paginatedData = sortedData.slice(page * limit, page * limit + limit);
+  const paginatedData = sortedData;
 
   const handleDelete = async (announcementId) => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) return;
@@ -83,9 +92,9 @@ function Announcement() {
       const response = await ApiService.delete(`${APIURL.ANNOUNCEMENT}/${announcementId}`);
       if (response.success) {
         alert('Announcement deleted successfully!');
-        fetchData();
+        if (paginatedData.length === 1 && page > 0) setPage(page - 1);
+        else fetchData();
       } else {
-        console.error(response.message);
         alert('Failed to delete announcement.');
       }
     } catch (error) {
@@ -113,7 +122,7 @@ function Announcement() {
             <CircularProgress size={40} />
           </Box>
         ) : (
-          <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
+          <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
@@ -164,7 +173,7 @@ function Announcement() {
         <TablePagination
           rowsPerPageOptions={[10, 15, 20, 25, 30]}
           component='div'
-          count={sortedData.length}
+          count={totalCount}
           rowsPerPage={limit}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}

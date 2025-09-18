@@ -20,10 +20,9 @@ export default function Multitrack() {
       const company_id = localStorage.getItem('company_id');
       if (!token || !company_id) return;
 
-      const params = { company_id };
-      dispatch(fetchVehicles(params));
+      dispatch(fetchVehicles({ limit: 500 }));
 
-      const vehicleRes = await ApiService.get(APIURL.ASSIGNSEAT, params);
+      const vehicleRes = await ApiService.get(APIURL.VEHICLE, { limit: 500 });
       if (!vehicleRes?.success || !Array.isArray(vehicleRes.data)) return;
 
       const imeis = vehicleRes.data.map((v) => v.imei_number).filter(Boolean);

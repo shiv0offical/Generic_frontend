@@ -22,13 +22,13 @@ const columns = [
 
 function EmergencyAlert() {
   const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(10);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
 
   const navigate = useNavigate();
 
@@ -40,11 +40,12 @@ function EmergencyAlert() {
   const fetchAlerts = async () => {
     setLoading(true);
     try {
-      const res = await ApiService.get(APIURL.EMERGENCY, { search: searchQuery, page: page + 1 || 1, limit });
-      if (res && res.success && Array.isArray(res.data)) {
+      const res = await ApiService.get(APIURL.EMERGENCY, { search: searchQuery, page: page + 1, limit });
+      console.log(res);
+      if (res && res.success && Array.isArray(res.data?.alerts)) {
         setAlerts(
-          res.data.map((item, idx) => ({
-            id: idx + 1 + page * limit,
+          res.data.alerts.map((item, idx) => ({
+            id: item?.id || idx + 1 + page * limit,
             emergencyID: item?.id,
             date: dayjs(item.created_at).format('YYYY-MM-DD'),
             vehicleNo: item?.vehicle_number,
@@ -59,14 +60,36 @@ function EmergencyAlert() {
             latitude: item?.latitude,
           }))
         );
-        setTotal(res.data.length);
+        setTotalCount(
+          typeof res.data?.pagination?.total === 'number' ? res.data.pagination.total : res.data.alerts.length
+        );
+      } else if (res && res.success && Array.isArray(res.data)) {
+        // fallback for old API shape
+        setAlerts(
+          res.data.map((item, idx) => ({
+            id: item?.id || idx + 1 + page * limit,
+            emergencyID: item?.id,
+            date: dayjs(item.created_at).format('YYYY-MM-DD'),
+            vehicleNo: item?.vehicle_number,
+            routeNo: item?.route_number,
+            routeName: item?.name,
+            driverName: item?.json_build_object?.name || '',
+            employeeName: `${item?.employee?.first_name || ''} ${item?.employee?.last_name || ''}`.trim(),
+            title: item?.title,
+            message: item?.message,
+            actionTaken: item?.action_taken,
+            longitude: item?.longitude,
+            latitude: item?.latitude,
+          }))
+        );
+        setTotalCount(res.data.length);
       } else {
         setAlerts([]);
-        setTotal(0);
+        setTotalCount(0);
       }
     } catch {
       setAlerts([]);
-      setTotal(0);
+      setTotalCount(0);
       alert('Failed to fetch Emergency Alerts');
     } finally {
       setLoading(false);
@@ -91,6 +114,8 @@ function EmergencyAlert() {
       })
     : alerts;
 
+  const paginatedData = sortedData;
+
   const handleEdit = (row) => {
     navigate('/management/emergency-alert/edit', { state: row });
   };
@@ -101,7 +126,8 @@ function EmergencyAlert() {
       const response = await ApiService.delete(`${APIURL.EMERGENCY}/${emergencyID}`);
       if (response && response.success) {
         alert('Alert deleted successfully!');
-        fetchAlerts();
+        if (paginatedData.length === 1 && page > 0) setPage(page - 1);
+        else fetchAlerts();
       } else {
         alert('Failed to delete alert.');
       }
@@ -125,7 +151,7 @@ function EmergencyAlert() {
           </div>
         ) : (
           <>
-            <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
+            <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -145,14 +171,14 @@ function EmergencyAlert() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {sortedData.length === 0 ? (
+                  {paginatedData.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={columns.length + 1} align='center'>
                         No data found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    sortedData.map((row) => (
+                    paginatedData.map((row) => (
                       <TableRow key={row.id}>
                         {columns.map((col) => (
                           <TableCell key={col.key}>{row[col.key]}</TableCell>
@@ -192,7 +218,7 @@ function EmergencyAlert() {
             <TablePagination
               rowsPerPageOptions={[10, 15, 20, 25, 30]}
               component='div'
-              count={total}
+              count={totalCount}
               rowsPerPage={limit}
               page={page}
               onPageChange={(_, newPage) => setPage(newPage)}

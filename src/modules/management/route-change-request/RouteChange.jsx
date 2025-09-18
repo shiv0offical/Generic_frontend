@@ -59,6 +59,7 @@ function RouteChange() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [routeChange, setRouteChange] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
 
   const getStatusLabel = (value) => statusOptions.find((opt) => opt.id === value)?.name || '';
 
@@ -90,18 +91,31 @@ function RouteChange() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const res = await ApiService.get(APIURL.ROUTECHANGEREQ, { searchQuery });
-      setLoading(false);
-
-      if (res && res.success) {
-        setRouteChange(formatRouteChangeData(res.data.routeChanges));
-      } else {
+      try {
+        const res = await ApiService.get(APIURL.ROUTECHANGEREQ, { page: page + 1, limit, search: searchQuery });
+        if (res && res.success) {
+          setRouteChange(formatRouteChangeData(res.data.routeChanges));
+          setTotalCount(
+            typeof res.data?.pagination?.total === 'number'
+              ? res.data.pagination.total
+              : Array.isArray(res.data.routeChanges)
+              ? res.data.routeChanges.length
+              : 0
+          );
+        } else {
+          setRouteChange([]);
+          setTotalCount(0);
+        }
+      } catch {
         setRouteChange([]);
+        setTotalCount(0);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [searchQuery, page, limit]);
 
   const handleSort = (columnKey) => {
     const isAsc = orderBy === columnKey && order === 'asc';
@@ -122,7 +136,7 @@ function RouteChange() {
         return 0;
       });
 
-  const paginatedData = sortedData.slice(page * limit, page * limit + limit);
+  const paginatedData = sortedData;
 
   return (
     <div className='w-full h-full p-2'>
@@ -132,7 +146,7 @@ function RouteChange() {
       </div>
 
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
-        <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
+        <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
@@ -188,7 +202,7 @@ function RouteChange() {
         <TablePagination
           rowsPerPageOptions={[10, 15, 20, 25, 30]}
           component='div'
-          count={routeChange.length}
+          count={totalCount}
           rowsPerPage={limit}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}

@@ -21,9 +21,10 @@ function Feedback() {
   const [limit, setLimit] = useState(10);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [feedbackData, setFeedbackData] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   const companyID = localStorage.getItem('company_id');
   const navigate = useNavigate();
@@ -36,54 +37,48 @@ function Feedback() {
   const fetchFeedbacks = async () => {
     setLoading(true);
     try {
-      const params = { company_id: companyID, search: searchQuery, page: page + 1 || 1, limit };
+      const params = { company_id: companyID, search: searchQuery, page: page + 1, limit };
       const res = await ApiService.get(APIURL.FEEDBACK, params);
-
       if (res?.success) {
+        const list = Array.isArray(res.data?.feedbacks) ? res.data.feedbacks : [];
         setFeedbackData(
-          Array.isArray(res.data?.feedbacks)
-            ? res.data.feedbacks.map((item) => ({
-                id: item.id,
-                employeeName: `${item?.employee?.first_name || ''} ${item?.employee?.last_name || ''}`.trim(),
-                rating: item?.rating,
-                message: item?.message,
-                createdAt: dayjs(item.created_at).format('YYYY-MM-DD'),
-                raw: item,
-              }))
-            : []
+          list.map((item) => ({
+            id: item.id,
+            employeeName: `${item?.employee?.first_name || ''} ${item?.employee?.last_name || ''}`.trim(),
+            rating: item?.rating,
+            message: item?.message,
+            createdAt: dayjs(item.created_at).format('YYYY-MM-DD'),
+            raw: item,
+          }))
         );
+        setTotalCount(typeof res.data?.pagination?.total === 'number' ? res.data.pagination.total : list.length);
       } else {
         setFeedbackData([]);
+        setTotalCount(0);
       }
     } catch (e) {
-      console.error(e);
       setFeedbackData([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSort = (columnKey) => {
-    const isAsc = orderBy === columnKey && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(columnKey);
+  const handleSort = (key) => {
+    setOrder(orderBy === key && order === 'asc' ? 'desc' : 'asc');
+    setOrderBy(key);
   };
 
   const sortedData = orderBy
     ? [...feedbackData].sort((a, b) => {
-        const valueA = a[orderBy] ?? '';
-        const valueB = b[orderBy] ?? '';
-        if (typeof valueA === 'string')
-          return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-        return order === 'asc' ? valueA - valueB : valueB - valueA;
+        const va = a[orderBy] ?? '',
+          vb = b[orderBy] ?? '';
+        if (typeof va === 'string') return order === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        return order === 'asc' ? va - vb : vb - va;
       })
     : feedbackData;
 
-  const paginatedData = sortedData.slice(page * limit, page * limit + limit);
-
-  const handleEdit = (row) => {
-    navigate('/management/feedback/edit', { state: row.raw });
-  };
+  const handleEdit = (row) => navigate('/management/feedback/edit', { state: row.raw });
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this feedback?')) return;
@@ -91,12 +86,10 @@ function Feedback() {
       const res = await ApiService.delete(`${APIURL.FEEDBACK}/${id}`);
       if (res.success) {
         alert('Feedback deleted successfully!');
-        fetchFeedbacks();
-      } else {
-        alert('Failed to delete this Feedback.');
-      }
-    } catch (error) {
-      console.error(error);
+        if (sortedData.length === 1 && page > 0) setPage(page - 1);
+        else fetchFeedbacks();
+      } else alert('Failed to delete this Feedback.');
+    } catch {
       alert('An error occurred while deleting.');
     }
   };
@@ -113,7 +106,7 @@ function Feedback() {
             <CircularProgress size={28} />
           </Box>
         ) : (
-          <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
+          <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
@@ -133,14 +126,14 @@ function Feedback() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedData.length === 0 ? (
+                {sortedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={columns.length + 1} align='center'>
                       No data found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedData.map((row) => (
+                  sortedData.map((row) => (
                     <TableRow key={row.id}>
                       {columns.map((col) => (
                         <TableCell key={col.key}>{row[col.key]}</TableCell>
@@ -169,7 +162,7 @@ function Feedback() {
         <TablePagination
           rowsPerPageOptions={[10, 15, 20, 25, 30]}
           component='div'
-          count={sortedData.length}
+          count={totalCount || sortedData.length}
           rowsPerPage={limit}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}

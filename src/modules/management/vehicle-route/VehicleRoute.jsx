@@ -23,22 +23,24 @@ const columns = [
 const VehicleRoute = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { vehicleRoutes, loading, error } = useSelector((state) => state.vehicleRoute);
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { vehicleRoutes, loading, error } = useSelector((state) => state.vehicleRoute);
+  const totalCount = vehicleRoutes?.pagination?.total || 0;
+
   useEffect(() => {
-    ApiService.get(APIURL.VEHICLE_ROUTE, { search: searchQuery, page: page + 1 || 1, limit }).then(
+    ApiService.get(APIURL.VEHICLE_ROUTE, { search: searchQuery, page: page + 1, limit }).then(
       (res) => res.success && dispatch(setVehicleRoute(res.data))
     );
   }, [dispatch, searchQuery, page, limit]);
 
   const processedData =
     vehicleRoutes?.routes?.map((item, i) => ({
-      id: i + 1,
+      id: page * limit + i + 1,
       routeID: item.id,
       busNumber: item.vehicle?.vehicle_number || item.vehicle?.vehicle_name || '-',
       vehicleID: item.vehicle_id,
@@ -48,6 +50,7 @@ const VehicleRoute = () => {
       busDriver: item.vehicle?.driver ? `${item.vehicle.driver.first_name} ${item.vehicle.driver.last_name}` : '-',
       status: typeof item.status === 'string' ? item.status : item.active === 1 ? 'Active' : 'Inactive',
       createdAt: dayjs(item.created_at).format('YYYY-MM-DD'),
+      row: item,
     })) || [];
 
   const handleSort = (columnKey) => {
@@ -56,30 +59,29 @@ const VehicleRoute = () => {
     setOrderBy(columnKey);
   };
 
-  const sortedData = [...processedData].sort((a, b) => {
-    if (!orderBy) return 0;
-    const valueA = a[orderBy];
-    const valueB = b[orderBy];
-    if (typeof valueA === 'string')
-      return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    return order === 'asc' ? valueA - valueB : valueB - valueA;
-  });
+  const sortedData = orderBy
+    ? [...processedData].sort((a, b) => {
+        const valueA = a[orderBy];
+        const valueB = b[orderBy];
+        if (typeof valueA === 'string')
+          return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+        return order === 'asc' ? valueA - valueB : valueB - valueA;
+      })
+    : processedData;
 
-  const paginatedData = sortedData.slice(page * limit, page * limit + limit);
-
-  const handleView = (row) => navigate('/management/vehicle-route/view', { state: { mode: 'view', rowData: row } });
-  const handleEdit = (row) => navigate('/management/vehicle-route/edit', { state: { mode: 'edit', rowData: row } });
+  const handleView = (row) =>
+    navigate('/management/vehicle-route/view', { state: { mode: 'view', rowData: row.row || row } });
+  const handleEdit = (row) =>
+    navigate('/management/vehicle-route/edit', { state: { mode: 'edit', rowData: row.row || row } });
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this Vehicle Route ?')) return;
     try {
       const response = await ApiService.delete(`${APIURL.VEHICLE_ROUTE}/${id}`);
+      alert(response.message || (response.success ? 'Deleted' : 'Failed to delete Vehicle Route'));
       if (response.success) {
-        alert(response.message);
-        const res = await ApiService.get(APIURL.VEHICLE_ROUTE, { search: searchQuery });
+        const res = await ApiService.get(APIURL.VEHICLE_ROUTE, { search: searchQuery, page: page + 1, limit });
         if (res.success) dispatch(setVehicleRoute(res.data));
-      } else {
-        alert(response.message || 'Failed to delete Vehicle Route');
       }
     } catch (error) {
       console.error(error);
@@ -95,7 +97,7 @@ const VehicleRoute = () => {
       </div>
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
         {error && <div className='text-red-700'>Error: {error}</div>}
-        <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
+        <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
@@ -121,14 +123,14 @@ const VehicleRoute = () => {
                     <CircularProgress size={28} className='my-4' />
                   </TableCell>
                 </TableRow>
-              ) : paginatedData.length === 0 ? (
+              ) : sortedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length + 1} align='center'>
                     No data found
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedData.map((row) => (
+                sortedData.map((row) => (
                   <TableRow key={row.id}>
                     {columns.map((col) => (
                       <TableCell key={col.key}>{row[col.key]}</TableCell>
@@ -161,7 +163,7 @@ const VehicleRoute = () => {
         <TablePagination
           rowsPerPageOptions={[10, 15, 20, 25, 30]}
           component='div'
-          count={processedData.length}
+          count={totalCount || sortedData.length}
           rowsPerPage={limit}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}

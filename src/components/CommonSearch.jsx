@@ -10,7 +10,7 @@ function CommonSearch({ searchQuery = '', setSearchQuery }) {
   }, [value, setSearchQuery]);
 
   return (
-    <div className='flex justify-end bg-white' style={{margin:"10px"}}>
+    <div className='flex justify-end bg-white'>
       <TextField
         label='Search'
         variant='outlined'
