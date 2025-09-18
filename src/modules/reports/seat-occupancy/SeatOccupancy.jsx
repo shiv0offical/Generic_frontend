@@ -1,5 +1,5 @@
 import moment from 'moment-timezone';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchSeatOccupancyReport } from '../../../redux/vehicleReportSlice';
@@ -23,41 +23,28 @@ function SeatOccupancy() {
   const { seatOccupancyReportData, loading, error } = useSelector((state) => state?.vehicleReport);
 
   useEffect(() => {
-    dispatch(fetchSeatOccupancyReport({ page: page + 1 || 1, limit }));
+    dispatch(fetchSeatOccupancyReport({ page: page + 1, limit }));
   }, [dispatch, page, limit]);
 
-  const rows = useMemo(() => {
-    const raw = seatOccupancyReportData?.data;
-    if (!raw || typeof raw !== 'object') return [];
-    const vehicle = raw.vehicle;
-    const driver = vehicle?.vehicle_driver;
-    const route = vehicle?.Vehicle_Route?.[0];
-    const totalSeats = '-';
-    const noPunchEmployees = raw?.NoPunchLog?.Employee || [];
-    return Object.entries(raw)
-      .filter(([k]) => /^\d{4}-\d{2}-\d{2}$/.test(k))
-      .map(([key, value]) => {
-        const employees = value?.Employee || [];
-        const totalAssigned = employees.length + noPunchEmployees.length;
-        const totalOccupied = employees.filter(
-          (emp) => emp.punch_log && emp.punch_log.some((log) => log.punch_status === true)
-        ).length;
-        return {
-          date: moment(key).format('YYYY-MM-DD'),
-          vehicleNo: vehicle?.vehicle_number || 'N/A',
-          routeNo: route?.route_number || 'N/A',
-          routeName: route?.name || 'N/A',
-          driverName: `${driver?.first_name || ''} ${driver?.last_name || ''}`,
-          driverNumber: driver?.phone_number || 'N/A',
-          totalSeats,
-          totalOccupied,
-          totalOccupancyRate: totalAssigned > 0 ? Math.round((totalOccupied / totalAssigned) * 100) : 0,
-        };
-      });
-  }, [seatOccupancyReportData]);
+  const tableData = Array.isArray(seatOccupancyReportData?.data)
+    ? seatOccupancyReportData.data.map((item) => ({
+        date: item.date ? moment(item.date).format('YYYY-MM-DD') : '-',
+        vehicleNo: item.vehicle?.vehicle_number || 'N/A',
+        routeName: item.vehicle?.Vehicle_Route?.[0]?.name || 'N/A',
+        driverName: `${item.vehicle?.vehicle_driver?.first_name || ''} ${
+          item.vehicle?.vehicle_driver?.last_name || ''
+        }`,
+        driverNumber: item.vehicle?.vehicle_driver?.phone_number || 'N/A',
+        totalSeats: item.vehicle?.total_seats ?? '-',
+        totalOccupied: typeof item.totalOccupied === 'number' ? item.totalOccupied : '-',
+        totalOccupancyRate:
+          typeof item.totalAssigned === 'number' && item.totalAssigned > 0 && typeof item.totalOccupied === 'number'
+            ? Math.round((item.totalOccupied / item.totalAssigned) * 100)
+            : 0,
+      }))
+    : [];
 
-  const totalCount = rows.length;
-  const tableData = rows.slice(page * limit, page * limit + limit);
+  const totalCount = seatOccupancyReportData?.pagination?.total || 0;
 
   return (
     <div className='w-full h-full p-2'>

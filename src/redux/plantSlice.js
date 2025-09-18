@@ -1,99 +1,73 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { ApiService } from "../services";
-import { APIURL } from "../constants";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { ApiService } from '../services';
+import { APIURL } from '../constants';
 
 // Async thunk to fetch plants from API
 export const fetchPlants = createAsyncThunk(
-  "plant/fetchPlants",
-  async ({ page = 1, limit = 5, search = "" }, { rejectWithValue }) => {
+  'plant/fetchPlants',
+  async ({ page = 1, limit = 5, search = '' }, { rejectWithValue }) => {
     try {
-      const response = await ApiService.get(APIURL.PLANTS, {
-        page,
-        limit,
-        search,
-      }); // Change the endpoint as needed
-
-      if (!response.success) {
-        return rejectWithValue(response.message || "Failed to fetch plants");
-      }
-
+      const response = await ApiService.get(APIURL.PLANTS, { page, limit, search });
+      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch plants');
       const { plants = [], pagination } = response.data;
       return { plants, pagination };
     } catch (error) {
-      return rejectWithValue(error.message || "Network error");
+      return rejectWithValue(error.message || 'Network error');
     }
   }
 );
 
 //Async thunk to Fetch single plant by ID
-export const fetchPlantById = createAsyncThunk(
-  "plant/fetchPlantById",
-  async (plantID, { rejectWithValue }) => {
-    try {
-      const response = await ApiService.get(`${APIURL.PLANTS}/${plantID}`);
+export const fetchPlantById = createAsyncThunk('plant/fetchPlantById', async (plantID, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.get(`${APIURL.PLANTS}/${plantID}`);
+    if (!response.success) return rejectWithValue(response.message || 'Failed to fetch plant');
 
-      if (!response.success) {
-        return rejectWithValue(response.message || "Failed to fetch plant");
-      }
-
-      return response.data.plant; // should be a single plant object
-    } catch (error) {
-      return rejectWithValue(error.message || "Network error");
-    }
+    return response.data.plant; // should be a single plant object
+  } catch (error) {
+    return rejectWithValue(error.message || 'Network error');
   }
-);
+});
 
 //Async thunk to Update plant
-export const updatePlant = createAsyncThunk(
-  "plant/updatePlant",
-  async ({ plantID, payload }, { rejectWithValue }) => {
-    try {
-      const response = await ApiService.put(
-        `${APIURL.PLANTS}/${plantID}`,
-        payload
-      );
+export const updatePlant = createAsyncThunk('plant/updatePlant', async ({ plantID, payload }, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.put(`${APIURL.PLANTS}/${plantID}`, payload);
 
-      if (!response.success) {
-        return rejectWithValue(response.message || "Failed to update plant");
-      }
-
-      return response.data; // updated plant
-    } catch (error) {
-      return rejectWithValue(error.message || "Network error");
+    if (!response.success) {
+      return rejectWithValue(response.message || 'Failed to update plant');
     }
+
+    return response.data; // updated plant
+  } catch (error) {
+    return rejectWithValue(error.message || 'Network error');
   }
-);
+});
 // Async thunk to Create plant
-export const createPlant = createAsyncThunk(
-  "plant/createPlant",
-  async (payload, { rejectWithValue }) => {
-    try {
-      const response = await ApiService.post(APIURL.PLANTS, payload);
-      if (!response.success) {
-        return rejectWithValue(response.message || "Failed to create plant");
-      }
-      return response.data; // newly created plant
-    } catch (error) {
-      return rejectWithValue(error.message || "Network error");
+export const createPlant = createAsyncThunk('plant/createPlant', async (payload, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.post(APIURL.PLANTS, payload);
+    if (!response.success) {
+      return rejectWithValue(response.message || 'Failed to create plant');
     }
+    return response.data; // newly created plant
+  } catch (error) {
+    return rejectWithValue(error.message || 'Network error');
   }
-);
+});
 
 // Async thunk to delete plants
-export const deletePlant = createAsyncThunk(
-  "plant/deletePlant",
-  async (plantID, { rejectWithValue }) => {
-    try {
-      const response = await ApiService.delete(`${APIURL.PLANTS}/${plantID}`);
-      if (!response.success) {
-        return rejectWithValue(response.message || "Failed to delete plant");
-      }
-      return { plantID, message: response.message };
-    } catch (error) {
-      return rejectWithValue(error.message || "Network error");
+export const deletePlant = createAsyncThunk('plant/deletePlant', async (plantID, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.delete(`${APIURL.PLANTS}/${plantID}`);
+    if (!response.success) {
+      return rejectWithValue(response.message || 'Failed to delete plant');
     }
+    return { plantID, message: response.message };
+  } catch (error) {
+    return rejectWithValue(error.message || 'Network error');
   }
-);
+});
 
 const initialState = {
   plants: [],
@@ -104,7 +78,7 @@ const initialState = {
 };
 
 export const plantReducer = createSlice({
-  name: "plant",
+  name: 'plant',
   initialState,
   reducers: {
     setPlantData: (state, action) => {
@@ -162,9 +136,7 @@ export const plantReducer = createSlice({
         state.loading = false;
         const updatedPlant = action.payload;
         // Update the plant inside the list if it exists
-        state.plants = state.plants.map((plant) =>
-          plant.id === updatedPlant.id ? updatedPlant : plant
-        );
+        state.plants = state.plants.map((plant) => (plant.id === updatedPlant.id ? updatedPlant : plant));
         // Also set it as the selectedPlant
         state.selectedPlant = updatedPlant;
       })
@@ -174,9 +146,7 @@ export const plantReducer = createSlice({
       })
       .addCase(deletePlant.fulfilled, (state, action) => {
         state.loading = false;
-        state.plants = state.plants.filter(
-          (plant) => plant.id !== action.payload.plantID
-        );
+        state.plants = state.plants.filter((plant) => plant.id !== action.payload.plantID);
       })
       .addCase(deletePlant.rejected, (state, action) => {
         state.loading = false;

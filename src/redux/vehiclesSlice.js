@@ -1,51 +1,37 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { ApiService } from "../services";
-import { APIURL } from "../constants";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { ApiService } from '../services';
+import { APIURL } from '../constants';
 
 // Async thunk to fetch vehicles
 export const fetchVehicles = createAsyncThunk(
-  "vehicle/fetchVehicles",
-  async (
-    { page = 1, limit = 10, fromDate = "", toDate = "" },
-    { rejectWithValue }
-  ) => {
+  'vehicle/fetchVehicles',
+  async ({ page = 1, limit = 10, fromDate = '', toDate = '', search = '' }, { rejectWithValue }) => {
     try {
-      const response = await ApiService.get(APIURL.VEHICLE, {
-        page,
-        limit,
-        fromDate,
-        toDate,
-      });
-
-      if (!response.success) {
-        return rejectWithValue(response.message || "Failed to fetch vehicles");
-      }
+      const response = await ApiService.get(APIURL.VEHICLE, { page, limit, fromDate, toDate, search });
+      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch vehicles');
 
       const { vehicles = [], pagination } = response.data;
       return { vehicles, pagination };
     } catch (error) {
-      return rejectWithValue(error.message || "Network error");
+      return rejectWithValue(error.message || 'Network error');
     }
   }
 );
 
 // Create Vehicle
-export const createVehicle = createAsyncThunk(
-  "vehicles/createVehicle",
-  async (payload, { rejectWithValue }) => {
-    try {
-      const response = await ApiService.post(APIURL.VEHICLE, payload);
-      if (!response.success) return rejectWithValue(response.message);
-      return response.data; // return the created vehicle
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+export const createVehicle = createAsyncThunk('vehicles/createVehicle', async (payload, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.post(APIURL.VEHICLE, payload);
+    if (!response.success) return rejectWithValue(response.message);
+    return response.data; // return the created vehicle
+  } catch (error) {
+    return rejectWithValue(error.message);
   }
-);
+});
 
 // Update Vehicle
 export const updateVehicle = createAsyncThunk(
-  "vehicles/updateVehicle",
+  'vehicles/updateVehicle',
   async ({ id, payload }, { rejectWithValue }) => {
     try {
       const response = await ApiService.put(`${APIURL.VEHICLE}/${id}`, payload);
@@ -58,24 +44,21 @@ export const updateVehicle = createAsyncThunk(
 );
 
 // Delete Vehicle
-export const deleteVehicle = createAsyncThunk(
-  "vehicles/deleteVehicle",
-  async (id, { rejectWithValue, dispatch }) => {
-    try {
-      const response = await ApiService.delete(`${APIURL.VEHICLE}/${id}`);
-      if (!response.success) return rejectWithValue(response.message);
+export const deleteVehicle = createAsyncThunk('vehicles/deleteVehicle', async (id, { rejectWithValue, dispatch }) => {
+  try {
+    const response = await ApiService.delete(`${APIURL.VEHICLE}/${id}`);
+    if (!response.success) return rejectWithValue(response.message);
 
-      // Re-fetch list after delete
-      dispatch(fetchVehicles({ page: 1, limit: 10 }));
-      return id;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+    // Re-fetch list after delete
+    dispatch(fetchVehicles({ page: 1, limit: 10 }));
+    return id;
+  } catch (error) {
+    return rejectWithValue(error.message);
   }
-);
+});
 
 export const changeVehicleStatus = createAsyncThunk(
-  "vehicles/changeVehicleStatus",
+  'vehicles/changeVehicleStatus',
   async ({ id, newStatusId }, { rejectWithValue }) => {
     try {
       const res = await ApiService.put(`${APIURL.VEHICLE}/${id}`, {
@@ -84,7 +67,7 @@ export const changeVehicleStatus = createAsyncThunk(
       if (res.data) {
         return res.vehicle; // return updated vehicle object directly
       } else {
-        return rejectWithValue(res.message || "Failed to update status");
+        return rejectWithValue(res.message || 'Failed to update status');
       }
     } catch (error) {
       return rejectWithValue(error.message);
@@ -102,7 +85,7 @@ const initialState = {
 
 // ---- Slice ----
 const vehiclesSlice = createSlice({
-  name: "vehicles",
+  name: 'vehicles',
   initialState,
   reducers: {
     setVehicleData: (state, action) => {

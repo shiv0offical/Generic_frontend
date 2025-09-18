@@ -1,44 +1,34 @@
-import {
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-} from '@mui/material';
-import { useState, useEffect } from 'react';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
-import { Link, useNavigate } from 'react-router-dom';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FmdGoodIcon from '@mui/icons-material/FmdGood';
-import FilterOptions from './components/FilterOption';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
+import { useState, useEffect } from 'react';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import IModal from '../../../components/modal/Modal';
-import * as XLSX from 'xlsx';
+import { Link, useNavigate } from 'react-router-dom';
+import FilterOptions from './components/FilterOption';
+import FmdGoodIcon from '@mui/icons-material/FmdGood';
 import { useDispatch, useSelector } from 'react-redux';
+import CommonSearch from '../../../components/CommonSearch';
+import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import { CircularProgress, Table, TableBody, TableCell } from '@mui/material';
 import { changeVehicleStatus, deleteVehicle, fetchVehicles } from '../../../redux/vehiclesSlice';
+import { TableContainer, TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
 
 const Vehicle = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { vehicles, pagination, loading } = useSelector((state) => state.vehicles);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(8);
+  const [file, setFile] = useState(null);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
-  const [filterData, setFilterData] = useState({
-    fromDate: '',
-    toDate: '',
-  });
-  const [file, setFile] = useState(null);
-  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [filterData, setFilterData] = useState({ fromDate: '', toDate: '' });
+
+  const { vehicles, pagination, loading } = useSelector((state) => state.vehicles);
 
   const formatVehicle = (info) => {
     return info?.map((data, idx) => {
@@ -65,20 +55,22 @@ const Vehicle = () => {
     });
   };
 
-  const getVehicleslist = (pageNumber = page + 1, limit = rowsPerPage, filters = filterData) => {
+  const getVehicleslist = (pageNumber = page + 1, limit = rowsPerPage, filters = filterData, search = searchQuery) => {
     dispatch(
       fetchVehicles({
         page: pageNumber,
         limit,
         fromDate: filters.fromDate,
         toDate: filters.toDate,
+        search,
       })
     );
   };
 
   useEffect(() => {
-    getVehicleslist();
-  }, [page, rowsPerPage]);
+    getVehicleslist(page + 1, rowsPerPage, filterData, searchQuery);
+    // eslint-disable-next-line
+  }, [page, rowsPerPage, filterData, searchQuery]);
 
   const vehilceData = formatVehicle(vehicles);
   const totalCount = pagination?.total || 0;
@@ -135,14 +127,8 @@ const Vehicle = () => {
     return order === 'asc' ? valueA - valueB : valueB - valueA;
   });
 
-  const handleView = (row) => {
-    // navigate("/master/vehicle/view", { state: row, action: "VIEW" });
-    navigate('/master/vehicle/view', { state: { ...row, action: 'VIEW' } });
-  };
-
-  const handleEdit = (row) => {
-    navigate('/master/vehicle/edit', { state: row, action: 'EDIT' });
-  };
+  const handleView = (row) => navigate('/master/vehicle/view', { state: { ...row, action: 'VIEW' } });
+  const handleEdit = (row) => navigate('/master/vehicle/edit', { state: row, action: 'EDIT' });
 
   const handleDelete = (id) => {
     if (!window.confirm('Are you sure you want to delete this Vehicle?')) return;
@@ -152,7 +138,13 @@ const Vehicle = () => {
       .then(() => {
         toast.success('Vehicle deleted successfully!', { position: 'top-right' });
         dispatch(
-          fetchVehicles({ page: page, limit: rowsPerPage, fromDate: filterData.fromDate, toDate: filterData.toDate })
+          fetchVehicles({
+            page: page,
+            limit: rowsPerPage,
+            fromDate: filterData.fromDate,
+            toDate: filterData.toDate,
+            search: searchQuery,
+          })
         );
       })
       .catch((err) => {
@@ -164,14 +156,14 @@ const Vehicle = () => {
 
   const handleClickFilter = () => {
     setPage(0);
-    getVehicleslist(1, rowsPerPage, filterData);
+    getVehicleslist(1, rowsPerPage, filterData, searchQuery);
   };
 
   const handleFormReset = () => {
     const resetFilter = { fromDate: '', toDate: '' };
     setFilterData(resetFilter);
     setPage(0);
-    getVehicleslist(1, rowsPerPage, resetFilter);
+    getVehicleslist(1, rowsPerPage, resetFilter, searchQuery);
   };
 
   const handleFileUpload = (event) => {
@@ -181,7 +173,13 @@ const Vehicle = () => {
   const handleExport = async () => {
     try {
       const res = await dispatch(
-        fetchVehicles({ page: 1, limit: totalCount, fromDate: filterData.fromDate, toDate: filterData.toDate })
+        fetchVehicles({
+          page: 1,
+          limit: totalCount,
+          fromDate: filterData.fromDate,
+          toDate: filterData.toDate,
+          search: searchQuery,
+        })
       ).unwrap();
       const fullData = formatVehicle(res?.vehicles || []);
 
@@ -233,6 +231,7 @@ const Vehicle = () => {
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
         <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehicles</h1>
+        <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
 
       {isStatusModalOpen && selectedVehicle && (

@@ -55,10 +55,10 @@ function PunchTimelog() {
   const { punchLogReportData, loading, error } = useSelector((state) => state?.punchInOut);
 
   useEffect(() => {
-    dispatch(fetchPuchLogReport({ page: page + 1 || 1, limit }));
+    dispatch(fetchPuchLogReport({ page: page + 1, limit }));
   }, [dispatch, page, limit]);
 
-  const data = punchLogReportData?.data ? [punchLogReportData.data] : [];
+  const data = Array.isArray(punchLogReportData?.data) ? punchLogReportData.data : [];
 
   const tableData = data.map((row) => ({
     ...row,

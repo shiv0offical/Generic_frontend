@@ -7,6 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useEffect, useRef, useState } from 'react';
 import IModal from '../../../components/modal/Modal';
 import FilterOptions from './components/FilterOption';
+import CommonSearch from '../../../components/CommonSearch';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import { Table, TableBody, TableCell, TableContainer } from '@mui/material';
 import { TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
@@ -22,14 +23,13 @@ function Employee() {
   const [file, setFile] = useState(null);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
-
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
-
-  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmp, setSelectedEmp] = useState(null);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 
   const formatEmp = (info, offset = 0) =>
     info?.map((data, idx) => ({
@@ -53,15 +53,25 @@ function Employee() {
       boardingTime: '10:00 AM',
       latitude: data.latitude,
       longitude: data.longitude,
-      boardingPoint:data.boarding_address,
+      boardingPoint: data.boarding_address,
       address: data.address,
       status: data.status?.toLowerCase() === 'active' || data.status === 'Active' ? 'Active' : 'Inactive',
     }));
 
-  const fetchData = async (customPage = page, customRowsPerPage = rowsPerPage) => {
+  const fetchData = async (customPage = page, customRowsPerPage = rowsPerPage, customSearch = searchQuery) => {
     try {
       const apiPage = customPage + 1;
-      const res = await ApiService.get(APIURL.EMPLOYEE, { page: apiPage, limit: customRowsPerPage });
+      const params = {
+        page: apiPage,
+        limit: customRowsPerPage,
+        search: customSearch?.trim() || undefined,
+        company_id: filterData.company_id,
+        department_id: filterData.department,
+        from_date: filterData.fromDate,
+        to_date: filterData.toDate,
+      };
+      Object.keys(params).forEach((k) => params[k] === undefined && delete params[k]);
+      const res = await ApiService.get(APIURL.EMPLOYEE, params);
       if (res?.success) {
         const offset = (apiPage - 1) * customRowsPerPage;
         const formatted = formatEmp(res.data?.employes || [], offset);
@@ -112,14 +122,17 @@ function Employee() {
   const handleClickFilter = async () => {
     try {
       const apiPage = 1;
-      const res = await ApiService.get(APIURL.EMPLOYEE, {
+      const params = {
         company_id: filterData.company_id,
         department_id: filterData.department,
         from_date: filterData.fromDate,
         to_date: filterData.toDate,
         page: apiPage,
         limit: rowsPerPage,
-      });
+        search: searchQuery?.trim() || undefined,
+      };
+      Object.keys(params).forEach((k) => params[k] === undefined && delete params[k]);
+      const res = await ApiService.get(APIURL.EMPLOYEE, params);
 
       if (res?.success) {
         const offset = 0;
@@ -137,7 +150,8 @@ function Employee() {
   const handleFormReset = () => {
     setFilterData({ company_id: companyID, fromDate: '', toDate: '', department: '' });
     setPage(0);
-    fetchData(0, rowsPerPage);
+    setSearchQuery('');
+    fetchData(0, rowsPerPage, '');
   };
 
   const handleSort = (columnKey) => {
@@ -190,14 +204,17 @@ function Employee() {
 
   const handleExport = async () => {
     try {
-      const res = await ApiService.get(APIURL.EMPLOYEE, {
+      const params = {
         company_id: filterData.company_id,
         department_id: filterData.department,
         from_date: filterData.fromDate,
         to_date: filterData.toDate,
         page: 1,
         limit: totalCount,
-      });
+        search: searchQuery?.trim() || undefined,
+      };
+      Object.keys(params).forEach((k) => params[k] === undefined && delete params[k]);
+      const res = await ApiService.get(APIURL.EMPLOYEE, params);
 
       const fullData = formatEmp(res?.data?.employes || []);
 
@@ -229,12 +246,20 @@ function Employee() {
   };
 
   useEffect(() => {
-    fetchData(page, rowsPerPage);
+    fetchData(page, rowsPerPage, searchQuery);
     // eslint-disable-next-line
-  }, [page, rowsPerPage]);
+  }, [
+    page,
+    rowsPerPage,
+    searchQuery,
+    filterData.company_id,
+    filterData.department,
+    filterData.fromDate,
+    filterData.toDate,
+  ]);
 
   const columns = [
-    { key: 'srNo', header: 'Sr No', render: (_row, i) => _row.id },
+    { key: 'srNo', header: 'Sr No', render: (_row) => _row.id },
     { key: 'employeeName', header: 'Employee Name' },
     { key: 'employee_id', header: 'Employee ID' },
     { key: 'plant', header: 'Plant' },
@@ -269,9 +294,11 @@ function Employee() {
     <div className='w-full h-full p-2'>
       <div className='flex justify-between mb-4'>
         <h1 className='text-2xl font-bold text-[#07163d]'>Employee</h1>
+        <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
+
       {isStatusModalOpen && selectedEmp && (
-        <IModal toggleModal={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)}>
+        <IModal open={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)}>
           <div className='p-4'>
             <h2 className='text-xl font-semibold mb-4 text-[#07163d]'>Change Employee Status</h2>
             <p className='mb-6'>

@@ -55,21 +55,19 @@ function EmployeeOnboard() {
   const { employeeOnboardData, loading, error } = useSelector((state) => state?.employee);
 
   useEffect(() => {
-    dispatch(fetchEmployeeOnboard({ page: page + 1 || 1, limit }));
+    dispatch(fetchEmployeeOnboard({ page: page + 1, limit }));
   }, [dispatch, page, limit]);
 
-  const data = Array.isArray(employeeOnboardData?.data)
-    ? employeeOnboardData.data
-    : employeeOnboardData?.data
-    ? [employeeOnboardData.data]
+  const tableData = Array.isArray(employeeOnboardData?.data)
+    ? employeeOnboardData.data.map((row) => ({
+        ...row,
+        location:
+          row.latitude && row.longitude
+            ? `${Number(row.latitude).toFixed(6)}, ${Number(row.longitude).toFixed(6)}`
+            : '-',
+        gmap: row.latitude && row.longitude ? `https://maps.google.com/?q=${row.latitude},${row.longitude}` : '',
+      }))
     : [];
-
-  const tableData = data.map((row) => ({
-    ...row,
-    location:
-      row.latitude && row.longitude ? `${Number(row.latitude).toFixed(6)}, ${Number(row.longitude).toFixed(6)}` : '-',
-    gmap: row.latitude && row.longitude ? `https://maps.google.com/?q=${row.latitude},${row.longitude}` : '',
-  }));
 
   return (
     <div className='w-full h-full p-2'>

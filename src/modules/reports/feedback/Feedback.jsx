@@ -19,13 +19,15 @@ function Feedback() {
   const { feedbackReportData, loading, error } = useSelector((state) => state?.feedbackReport);
 
   useEffect(() => {
-    dispatch(fetchFeedbackReport({ page: page + 1 || 1, limit }));
+    dispatch(fetchFeedbackReport({ page: page + 1, limit }));
   }, [dispatch, page, limit]);
 
   const tableData = Array.isArray(feedbackReportData?.feedbacks)
     ? feedbackReportData.feedbacks.map((item) => ({
-        employeeName: item.employee ? `${item.employee.first_name || ''} ${item.employee.last_name || ''}`.trim() : '',
-        givenRating: item.rating ?? '',
+        employeeName: item.employee
+          ? [item.employee.first_name, item.employee.last_name].filter(Boolean).join(' ')
+          : '',
+        givenRating: typeof item.rating === 'number' ? item.rating.toFixed(1) : '',
         review: item.message || '',
         dateTime: item.created_at ? moment(item.created_at).format('YYYY-MM-DD hh:mm A') : '',
       }))
@@ -44,7 +46,7 @@ function Feedback() {
         limit={limit}
         setLimit={setLimit}
         limitOptions={[10, 15, 20, 25, 30]}
-        totalCount={feedbackReportData?.pagination?.total}
+        totalCount={feedbackReportData?.pagination?.total || 0}
       />
     </div>
   );

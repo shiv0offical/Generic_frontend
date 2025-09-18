@@ -3,8 +3,6 @@ import CommonSearch from '../CommonSearch';
 import { Table, TableBody, TableCell, TableContainer, TableHead } from '@mui/material';
 import { TableRow, TableSortLabel, TablePagination, Paper, CircularProgress } from '@mui/material';
 
-const DEFAULT_LIMIT_OPTIONS = [10, 25, 50, 100];
-
 const headerCellSx = {
   fontWeight: 'bold',
   fontSize: '1rem',
@@ -13,7 +11,6 @@ const headerCellSx = {
   borderBottom: '1px solid #e0e0e0',
   height: 40,
 };
-
 const bodyCellSx = (isFirst) => ({
   fontWeight: isFirst ? 500 : 400,
   fontSize: '1rem',
@@ -39,24 +36,23 @@ const ReportTable = ({
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
 
-  const validLimitOptions =
-    Array.isArray(limitOptions) && limitOptions.length > 0
-      ? limitOptions.filter((opt) => DEFAULT_LIMIT_OPTIONS.includes(opt))
-      : DEFAULT_LIMIT_OPTIONS;
-
-  const safeLimit = typeof limit === 'number' && validLimitOptions.includes(limit) ? limit : validLimitOptions[0];
-
   let sortedData = [...data];
   if (orderBy) {
     sortedData.sort((a, b) => {
-      const valueA = a[orderBy];
-      const valueB = b[orderBy];
-      if (typeof valueA === 'string')
-        return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-      return order === 'asc' ? valueA - valueB : valueB - valueA;
+      const va = a[orderBy],
+        vb = b[orderBy];
+      if (typeof va === 'string') return order === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      return order === 'asc' ? va - vb : vb - va;
     });
   }
-  const paginatedData = sortedData.slice(page * safeLimit, page * safeLimit + safeLimit);
+
+  let validLimits =
+    Array.isArray(limitOptions) && limitOptions.length
+      ? [...new Set(limitOptions.filter((v) => typeof v === 'number' && v > 0))]
+      : [10, 25, 50, 100];
+  if (typeof limit === 'number' && !validLimits.includes(limit)) validLimits.push(limit);
+  validLimits.sort((a, b) => a - b);
+  const safeLimit = validLimits.includes(limit) ? limit : validLimits[0];
 
   return (
     <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4 h-full'>
@@ -66,7 +62,6 @@ const ReportTable = ({
             <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           </div>
         )}
-
         <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
           <Table stickyHeader size='medium'>
             <TableHead>
@@ -87,18 +82,11 @@ const ReportTable = ({
                 ))}
               </TableRow>
             </TableHead>
-
             <TableBody>
               {loading ? (
                 <TableRow sx={{ height: 36 }}>
                   <TableCell colSpan={columns.length} align='center' sx={{ height: 60 }}>
                     <CircularProgress size={28} className='my-2' />
-                  </TableCell>
-                </TableRow>
-              ) : paginatedData.length === 0 ? (
-                <TableRow sx={{ height: 36 }}>
-                  <TableCell colSpan={columns.length} align='center' sx={{ height: 60 }}>
-                    No data found
                   </TableCell>
                 </TableRow>
               ) : error ? (
@@ -107,8 +95,14 @@ const ReportTable = ({
                     <div className='text-red-700 text-center w-full py-2'>{error}</div>
                   </TableCell>
                 </TableRow>
+              ) : sortedData.length === 0 ? (
+                <TableRow sx={{ height: 36 }}>
+                  <TableCell colSpan={columns.length} align='center' sx={{ height: 60 }}>
+                    No data found
+                  </TableCell>
+                </TableRow>
               ) : (
-                paginatedData.map((row, rowIndex) => (
+                sortedData.map((row, rowIndex) => (
                   <TableRow key={row.id || rowIndex} hover sx={{ height: 36 }}>
                     {columns.map((col, colIdx) => (
                       <TableCell key={col.key} align={col.align || 'left'} sx={bodyCellSx(colIdx === 0)}>
@@ -121,17 +115,15 @@ const ReportTable = ({
             </TableBody>
           </Table>
         </TableContainer>
-
         <TablePagination
-          rowsPerPageOptions={validLimitOptions}
+          rowsPerPageOptions={validLimits}
           component='div'
           count={totalCount}
           rowsPerPage={safeLimit}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}
           onRowsPerPageChange={(e) => {
-            const newLimit = parseInt(e.target.value, 10);
-            setLimit(newLimit);
+            setLimit(Number(e.target.value));
             setPage(0);
           }}
         />

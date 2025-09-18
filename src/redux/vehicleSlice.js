@@ -22,7 +22,7 @@ export const fetchVehicles = createAsyncThunk('vehicles/fetchVehicles', async (p
 });
 
 export const vehicleReducer = createSlice({
-  name: 'vehicle',
+  name: 'vehicles',
   initialState,
   reducers: {
     fetchLastVehicles: (state, action) => {

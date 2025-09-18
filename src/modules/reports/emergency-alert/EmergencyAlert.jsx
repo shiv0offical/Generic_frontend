@@ -47,9 +47,8 @@ function EmergencyAlert() {
   const [limit, setLimit] = useState(10);
 
   const { emergencyReportAlertData, loading, error } = useSelector((state) => state?.emergencyReportAlert);
-
   useEffect(() => {
-    dispatch(fetchEmergencyReportAlert({ page: page + 1 || 1, limit }));
+    dispatch(fetchEmergencyReportAlert({ page: page + 1, limit }));
   }, [dispatch, page, limit]);
 
   const tableData = Array.isArray(emergencyReportAlertData?.data)
@@ -68,8 +67,8 @@ function EmergencyAlert() {
           longitude,
           location: latitude && longitude ? `${latitude}, ${longitude}` : '',
           gmap: latitude && longitude ? `https://maps.google.com/?q=${latitude},${longitude}` : '',
-          issuedRaised: item.title,
-          actionNote: item.action_taken,
+          issuedRaised: item.title || '',
+          actionNote: item.action_taken || '',
           date: item.created_at ? moment(item.created_at).format('YYYY-MM-DD hh:mm A') : '',
           updated_at: item.updated_at ? moment(item.updated_at).format('YYYY-MM-DD hh:mm A') : '',
         };
@@ -89,7 +88,7 @@ function EmergencyAlert() {
         limit={limit}
         setLimit={setLimit}
         limitOptions={[10, 15, 20, 25, 30]}
-        totalCount={emergencyReportAlertData?.pagination?.total}
+        totalCount={emergencyReportAlertData?.pagination?.total ?? 0}
       />
     </div>
   );

@@ -28,13 +28,13 @@ function VehicalArrivalTime() {
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
 
-  useEffect(() => {
-    dispatch(fetchVehicleArrivalData({ page: page + 1 || 1, limit }));
-  }, [dispatch, page, limit]);
-
   const { VehicleArrivalTimeReport, loading, error } = useSelector((state) => state?.vehicleReport);
 
-  const rows = Array.isArray(VehicleArrivalTimeReport?.data)
+  useEffect(() => {
+    dispatch(fetchVehicleArrivalData({ page: page + 1, limit }));
+  }, [dispatch, page, limit]);
+
+  const data = Array.isArray(VehicleArrivalTimeReport?.data)
     ? VehicleArrivalTimeReport.data.map((item) => {
         const stops = item?.vehicle_route?.Vehicle_Route_Stops?.[0] || {};
         const driver = item?.vehicle_route?.vehicle?.vehicle_driver || {};
@@ -65,6 +65,8 @@ function VehicalArrivalTime() {
       })
     : [];
 
+  const totalCount = VehicleArrivalTimeReport?.pagination?.total || 0;
+
   return (
     <div className='w-full h-full p-2'>
       <CustomTab tabs={tabs} />
@@ -73,7 +75,7 @@ function VehicalArrivalTime() {
       </div>
       <ReportTable
         columns={columns}
-        data={rows.slice(page * limit, page * limit + limit)}
+        data={data}
         loading={loading}
         error={error}
         page={page}
@@ -81,7 +83,7 @@ function VehicalArrivalTime() {
         limit={limit}
         setLimit={setLimit}
         limitOptions={[10, 15, 20, 25, 30]}
-        totalCount={rows.length}
+        totalCount={totalCount}
       />
     </div>
   );

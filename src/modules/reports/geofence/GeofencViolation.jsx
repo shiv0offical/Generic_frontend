@@ -54,13 +54,15 @@ function GeofencViolation() {
   const { GeoToGeoReportData, loading, error } = useSelector((state) => state?.geofence);
 
   useEffect(() => {
-    dispatch(fetchGeoToGeoFence({ page: page + 1 || 1, limit }));
+    dispatch(fetchGeoToGeoFence({ page: page + 1, limit }));
   }, [dispatch, page, limit]);
 
   const data =
     GeoToGeoReportData?.data?.tripCount?.res && Array.isArray(GeoToGeoReportData.data.tripCount.res)
       ? GeoToGeoReportData.data.tripCount.res
       : [];
+
+  const totalCount = GeoToGeoReportData?.data?.tripCount?.total || 0;
 
   return (
     <div className='w-full h-full p-2'>
@@ -75,7 +77,7 @@ function GeofencViolation() {
         limit={limit}
         setLimit={setLimit}
         limitOptions={[10, 15, 20, 25, 30]}
-        totalCount={GeoToGeoReportData?.data?.tripCount?.total || 0}
+        totalCount={totalCount}
       />
     </div>
   );

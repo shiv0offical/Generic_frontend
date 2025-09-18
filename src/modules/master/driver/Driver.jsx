@@ -1,30 +1,55 @@
-import {
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-} from "@mui/material";
-import { useState, useEffect } from "react";
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
-import { useNavigate } from "react-router-dom";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import FilterOptions from "./components/FilterOption";
-import dayjs from "dayjs";
-import IModal from "../../../components/modal/Modal";
-import * as XLSX from "xlsx";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  changeDriverStatus,
-  deleteDriver,
-  fetchDrivers,
-} from "../../../redux/driverSlice";
-import { toast } from "react-toastify";
+import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useState, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import IModal from '../../../components/modal/Modal';
+import FilterOptions from './components/FilterOption';
+import CommonSearch from '../../../components/CommonSearch';
+import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import { changeDriverStatus, deleteDriver, fetchDrivers } from '../../../redux/driverSlice';
+import { CircularProgress, Table, TableBody, TableCell, TableRow } from '@mui/material';
+import { TableContainer, TableHead, TablePagination, TableSortLabel } from '@mui/material';
+
+const columns = [
+  { key: 'id', header: 'Sr No' },
+  { key: 'driverName', header: 'Driver Name' },
+  { key: 'driverEmail', header: 'Driver Email' },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (value, row, handleStatusClick) => (
+      <button
+        onClick={() => handleStatusClick(row)}
+        className={`text-white px-2 py-1 rounded text-sm ${value === 1 ? 'bg-green-600' : 'bg-red-600'}`}>
+        {value === 1 ? 'Active' : 'Inactive'}
+      </button>
+    ),
+  },
+  { key: 'createdAt', header: 'Created At' },
+];
+
+const formatDriver = (info) =>
+  info?.map((data, idx) => ({
+    id: idx + 1,
+    driverName: `${data.first_name} ${data.last_name}`,
+    driverEmail: data.email,
+    status: data.active,
+    punchId: data.punch_id,
+    phoneNumber: data.phone_number,
+    createdAt: dayjs(data.created_at).format('YYYY-MM-DD'),
+    actual_id: data.id,
+    dateOfBirth: dayjs(data.date_of_birth).format('YYYY-MM-DD'),
+    drivingLicenceNo: data.driving_licence,
+    drivingLicenceIssueDate: dayjs(data.driving_licence_issue_date).format('YYYY-MM-DD'),
+    drivingLicenceExpiryDate: dayjs(data.driving_licence_expire_date).format('YYYY-MM-DD'),
+    address: data.address,
+    latitude: data.latitude,
+    longitude: data.longitude,
+  }));
 
 const Driver = () => {
   const dispatch = useDispatch();
@@ -32,81 +57,58 @@ const Driver = () => {
   const { drivers, pagination, loading } = useSelector((state) => state.driver);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [file, setFile] = useState(null);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
-  const [filterData, setFilterData] = useState({
-    fromDate: '',
-    toDate: '',
-  });
-  const [file, setFile] = useState(null);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
+  const [filterData, setFilterData] = useState({ fromDate: '', toDate: '' });
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const columns = [
-    { key: 'id', header: 'Sr No' },
-    { key: 'driverName', header: 'driver Name' },
-    { key: 'driverEmail', header: 'Driver Email' },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (value, row) => (
-        <button
-          onClick={() => handleStatusClick(row)}
-          className={`text-white px-2 py-1 rounded text-sm ${value === 1 ? 'bg-green-600' : 'bg-red-600'}`}>
-          {value === 1 ? 'Active' : 'Inactive'}
-        </button>
-      ),
-    },
-    { key: 'createdAt', header: 'Created At' },
-  ];
+  const totalCount = pagination?.total || 0;
 
-  const formatDriver = (info) => {
-    return info?.map((data, idx) => {
-      const formattedDate = dayjs(data.created_at).format('YYYY-MM-DD');
-      const formattedDob = dayjs(data.date_of_birth).format('YYYY-MM-DD');
-      const formattedExpiryDate = dayjs(data.driving_licence_expire_date).format('YYYY-MM-DD');
-      const formattedIssueDate = dayjs(data.driving_licence_issue_date).format('YYYY-MM-DD');
-      return {
-        id: idx + 1,
-        driverName: data.first_name + ' ' + data.last_name,
-        driverEmail: data.email,
-        status: data.active,
-        punchId: data.punch_id,
-        phoneNumber: data.phone_number,
-        createdAt: formattedDate,
-        actual_id: data.id,
-        dateOfBirth: formattedDob,
-        drivingLicenceNo: data.driving_licence,
-        drivingLicenceIssueDate: formattedIssueDate,
-        drivingLicenceExpiryDate: formattedExpiryDate,
-        address: data.address,
-        latitude: data.latitude,
-        longitude: data.longitude,
-      };
-    });
+  const fetchData = (pageNumber = page + 1, limit = rowsPerPage, filters = filterData, search = searchTerm) => {
+    dispatch(fetchDrivers({ page: pageNumber, limit, search, from_date: filters?.fromDate, to_date: filters?.toDate }));
   };
 
   useEffect(() => {
     fetchData();
-  }, [page, rowsPerPage]);
+    // eslint-disable-next-line
+  }, [page, rowsPerPage, searchTerm]);
 
-  const driverValue = formatDriver(drivers);
-  const totalCount = pagination?.total || 0;
+  const driverValue = useMemo(() => formatDriver(drivers), [drivers]);
 
-  const fetchData = (pageNumber = page + 1,
-    limit = rowsPerPage,
-    filters = filterData) => {
-      
-    dispatch(
-      fetchDrivers({
-        page: pageNumber,
-        limit: limit,
-        search: "",
-        from_date: filters?.fromDate,
-        to_date: filters?.toDate,
+  const handleSort = (columnKey) => {
+    setOrder((prev) => (orderBy === columnKey && prev === 'asc' ? 'desc' : 'asc'));
+    setOrderBy(columnKey);
+  };
+
+  const sortedData = useMemo(() => {
+    if (!orderBy) return driverValue;
+    return [...driverValue].sort((a, b) => {
+      const valueA = a[orderBy];
+      const valueB = b[orderBy];
+      if (typeof valueA === 'string')
+        return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+      return order === 'asc' ? valueA - valueB : valueB - valueA;
+    });
+  }, [driverValue, order, orderBy]);
+
+  const handleView = (row) => navigate('/master/driver/create', { state: row, action: 'VIEW' });
+  const handleEdit = (row) => navigate('/master/driver/create', { state: row, action: 'EDIT' });
+
+  const handleDelete = (id) => {
+    if (!window.confirm('Are you sure you want to delete this Driver ?')) return;
+    dispatch(deleteDriver(id))
+      .unwrap()
+      .then((msg) => {
+        toast.success(msg || 'Driver deleted successfully!', { position: 'top-right' });
+        fetchData(1, rowsPerPage);
       })
-    );
+      .catch((err) => {
+        toast.error(err || 'Failed to delete driver', { position: 'top-right' });
+      });
   };
 
   const handleStatusClick = (driver) => {
@@ -114,128 +116,58 @@ const Driver = () => {
     setIsStatusModalOpen(true);
   };
 
-  const handleSort = (columnKey) => {
-    const isAsc = orderBy === columnKey && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(columnKey);
+  const handleClickFilter = () => {
+    setPage(0);
+    fetchData(1, rowsPerPage, filterData, searchTerm);
   };
-
-  const sortedData = [...driverValue].sort((a, b) => {
-    if (!orderBy) return 0;
-    const valueA = a[orderBy];
-    const valueB = b[orderBy];
-
-    if (typeof valueA === 'string') {
-      return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    }
-    return order === 'asc' ? valueA - valueB : valueB - valueA;
-  });
-
-  const displayedData = sortedData;
-
-  const handleView = (row) => {
-    navigate('/master/driver/create', { state: row, action: 'VIEW' });
-  };
-
-  const handleEdit = (row) => {
-    navigate('/master/driver/create', { state: row, action: 'EDIT' });
-  };
-
-  const handleDelete = (id) => {
-    if (!window.confirm("Are you sure you want to delete this Driver ?"))
-      return;
-
-    dispatch(deleteDriver(id))
-      .unwrap()
-      .then((msg) => {
-        toast.success(msg || "Driver deleted successfully!", {
-          position: "top-right",
-        });
-        //Always refetch after delete
-        fetchData(1,rowsPerPage)
-      })
-      .catch((err) => {
-        toast.error(err || "Failed to delete driver", {
-          position: "top-right",
-        });
-      });
-  };
-
-const handleClickFilter = () => {
-  setPage(0);
-  setFilterData(prev => {
-    const updated = { ...prev };
-    fetchData(1, rowsPerPage, updated);
-    return updated;
-  });
-};
-
 
   const handleFormReset = () => {
-    const resetFilter = { fromDate: "", toDate: "" };
+    const resetFilter = { fromDate: '', toDate: '' };
     setFilterData(resetFilter);
     setPage(0);
-    fetchData(1, rowsPerPage,resetFilter);
+    fetchData(1, rowsPerPage, resetFilter, searchTerm);
   };
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = () => {
     console.log(file);
   };
 
   const handleExport = () => {
-    const exportData = driverValue.map((row) => {
-      return {
-        "Sr No": row.id,
-        "Driver Name": row.driverName,
-        "Driver Email": row.driverEmail,
-        Status: row.status === 1 ? "Active" : "Inactive",
-        "Created At": row.createdAt,
-      };
-    });
-
+    const exportData = driverValue.map((row) => ({
+      'Sr No': row.id,
+      'Driver Name': row.driverName,
+      'Driver Email': row.driverEmail,
+      Status: row.status === 1 ? 'Active' : 'Inactive',
+      'Created At': row.createdAt,
+    }));
     const worksheet = XLSX.utils.json_to_sheet(exportData);
-    worksheet["!cols"] = [
-      { wch: 8 }, // Sr No
-      { wch: 25 }, // Driver Name
-      { wch: 30 }, // Driver Email
-      { wch: 12 }, // Status
-      { wch: 18 }, // Created At
-    ];
-
+    worksheet['!cols'] = [{ wch: 8 }, { wch: 25 }, { wch: 30 }, { wch: 12 }, { wch: 18 }];
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Drivers");
-    XLSX.writeFile(workbook, "drivers.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Drivers');
+    XLSX.writeFile(workbook, 'drivers.xlsx');
   };
 
-  const handleStatusChange = async () => {
+  const handleStatusChange = () => {
     if (!selectedDriver) return;
     const newStatusId = selectedDriver.status === 1 ? 2 : 1;
-
-    dispatch(
-      changeDriverStatus({
-        id: selectedDriver.actual_id,
-        newStatusId,
-      })
-    )
+    dispatch(changeDriverStatus({ id: selectedDriver.actual_id, newStatusId }))
       .unwrap()
       .then((msg) => {
-        toast.success(msg, { position: "top-right" });
+        toast.success(msg, { position: 'top-right' });
         setIsStatusModalOpen(false);
         setSelectedDriver(null);
-        //Always refetch list after update
-        fetchData(1,rowsPerPage)
+        fetchData(1, rowsPerPage);
       })
       .catch((err) => {
-        toast.error(err || "Failed to update status", {
-          position: "top-right",
-        });
+        toast.error(err || 'Failed to update status', { position: 'top-right' });
       });
   };
 
   return (
     <div className='w-full h-full p-2'>
-      <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Driver</h1>
+      <div className='flex justify-between items-center mb-4'>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Driver</h1>
+        <CommonSearch searchQuery={searchTerm} setSearchQuery={setSearchTerm} />
       </div>
       {isStatusModalOpen && selectedDriver && (
         <IModal toggleModal={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)}>
@@ -243,7 +175,7 @@ const handleClickFilter = () => {
             <h2 className='text-xl font-semibold mb-4 text-[#07163d]'>Change Driver Status</h2>
             <p className='mb-6'>
               Are you sure you want to change status of <strong>{selectedDriver.driverName}</strong> from{' '}
-              <strong>{selectedDriver.status === 1 ? 'Active' : 'Inactive' }</strong> to{' '}
+              <strong>{selectedDriver.status === 1 ? 'Active' : 'Inactive'}</strong> to{' '}
               <strong>{selectedDriver.status === 2 ? 'Active' : 'Inactive'}</strong>?
             </p>
             <div className='flex justify-end gap-3'>
@@ -272,10 +204,8 @@ const handleClickFilter = () => {
         file={file}
         handleExport={handleExport}
       />
-      <div className="bg-white rounded-sm border-t-3 border-[#07163d] mt-4">
-        <TableContainer
-          sx={{ maxHeight: 400, overflowX: "auto", position: "relative" }}
-        >
+      <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
+        <TableContainer sx={{ maxHeight: 400, overflowX: 'auto', position: 'relative' }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
@@ -295,25 +225,25 @@ const handleClickFilter = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + 1} align="center">
+                  <TableCell colSpan={columns.length + 1} align='center'>
                     <CircularProgress size={24} />
                   </TableCell>
                 </TableRow>
-              ) : displayedData.length === 0 ? (
+              ) : sortedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length + 1} align='center'>
                     No data found
                   </TableCell>
                 </TableRow>
               ) : (
-                displayedData.map((row) => (
+                sortedData.map((row) => (
                   <TableRow key={row.id}>
                     {columns.map((column) => (
                       <TableCell className='whitespace-nowrap' key={column.key}>
-                        {column.render ? column.render(row[column.key], row) : row[column.key]}
+                        {column.render ? column.render(row[column.key], row, handleStatusClick) : row[column.key]}
                       </TableCell>
                     ))}
-                    <TableCell key={row.id}>
+                    <TableCell>
                       <div className='flex flex-nowrap justify-center gap-1'>
                         <button
                           className='bg-blue-400 p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'
@@ -340,13 +270,13 @@ const handleClickFilter = () => {
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[5, 10, 20]}
-          component="div"
+          component='div'
           count={totalCount}
           rowsPerPage={rowsPerPage}
           page={page}
-          onPageChange={(event, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
         />

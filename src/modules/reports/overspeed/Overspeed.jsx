@@ -54,10 +54,11 @@ function Overspeed() {
   const { speedOverReportData, loading, error } = useSelector((state) => state?.vehicleReport);
 
   useEffect(() => {
-    dispatch(fetchOverSpeedReport({ page: page + 1 || 1, limit }));
+    dispatch(fetchOverSpeedReport({ page: page + 1, limit }));
   }, [dispatch, page, limit]);
 
   const overspeedData = Array.isArray(speedOverReportData?.overspeedData) ? speedOverReportData.overspeedData : [];
+  const totalCount = speedOverReportData?.pagination?.total || 0;
 
   const tableData = overspeedData.map((item) => ({
     vehicle_name: item.vehicle_name || '-',
@@ -91,7 +92,7 @@ function Overspeed() {
         limit={limit}
         setLimit={setLimit}
         limitOptions={[10, 15, 20, 25, 30]}
-        totalCount={speedOverReportData?.pagination?.total || 0}
+        totalCount={totalCount}
       />
     </div>
   );

@@ -59,12 +59,14 @@ function DestinationArrivalFemale() {
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
 
+  const paginatedData = data.slice(page * limit, page * limit + limit);
+
   return (
     <div className='w-full h-full p-2'>
       <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Arrival History Of Female Employees @ Destination</h1>
       <ReportTable
         columns={columns}
-        data={data}
+        data={paginatedData}
         loading={false}
         error={null}
         page={page}

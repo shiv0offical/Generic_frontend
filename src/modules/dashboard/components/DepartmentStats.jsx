@@ -51,7 +51,6 @@ function DepartmentStats() {
         {[0, 1].map((row) => (
           <div key={row} className={`flex justify-between items-center ${row === 1 ? 'mt-3' : ''}`}>
             {departments.slice(row * 3, row * 3 + 3).map((dept, idx) => {
-              console.log(dept);
               return (
                 <div key={idx} className='w-1/3 flex flex-col items-center'>
                   <img src={icons[normalizeKey(dept.department_name)]} alt={dept.department_name} className='w-10' />
