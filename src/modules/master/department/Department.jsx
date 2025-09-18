@@ -79,10 +79,6 @@ const Department = () => {
     });
   };
 
-  const handleSearch = (value) => {
-    setSearchQuery(value.trim());
-    setPage(1);
-  };
 
   return (
     <div>
@@ -133,11 +129,12 @@ const Department = () => {
             data={formattedDepartments}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onSearch={handleSearch}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
             totalCount={pagination?.total || 0}
             page={page}
             rowsPerPage={rowsPerPage}
-            onPageChange={setPage}
+            onPageChange={(newPage) => setPage(newPage + 1)}
             onRowsPerPageChange={(newRowsPerPage) => {
               setRowsPerPage(newRowsPerPage);
               setPage(1);

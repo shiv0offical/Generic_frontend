@@ -44,7 +44,6 @@ const DriverForm = () => {
 
   const location = useLocation();
   const rowData = location.state;
-  console.log("🚀 ~ DriverForm.jsx:49 ~ DriverForm ~ rowData:", rowData);
 
   const handleDrop = (e) => {
     e.preventDefault();

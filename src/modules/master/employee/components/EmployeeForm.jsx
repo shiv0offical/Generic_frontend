@@ -63,7 +63,6 @@ function EmployeeForm() {
     queryParams: { company_id: companyID },
     dataKey: "departments",
     labelSelector: (d) => {
-    console.log("🔍 department item:", d); // 👈 see the structure here
     return d?.department_name ?? "";
   },
     valueSelector: (d) => d.id,
@@ -135,6 +134,19 @@ function EmployeeForm() {
         const data = rowData.rowData;
         const [firstName = "", lastName = ""] =
           data.employeeName?.split(" ") || [];
+
+          const selectedAddress = data.address
+        ? {
+            label: data.address,
+            value: data.latitude + "-" + data.longitude, // unique key
+            otherData: {
+              display_name: data.address,
+              lat: data.latitude,
+              lon: data.longitude,
+            },
+          }
+        : null;
+
         setFormVal({
           firstName,
           lastName,
@@ -149,12 +161,13 @@ function EmployeeForm() {
           selectedGender:
             data.gender === "Male" ? "2" : data.gender === "Female" ? "1" : "",
           vehicleRoute: data.routeId || "",
-          boardingPoint: data.boardingPoint || "",
+          boardingPoint: data?.boardingPoint,
           profilePhoto: null,
           address: data.address || "",
           latitude: data.latitude || "",
           longitude: data.longitude || "",
         });
+          setSelectedAddressOption(selectedAddress);
       }
     }
   }, [rowData]);
@@ -175,13 +188,14 @@ function EmployeeForm() {
       date_of_birth: formVal.dateOfBirth,
       gender: formVal.selectedGender,
       vehicle_route_id: formVal.vehicleRoute,
+      boardingPoint:formVal.boardingPoint,
       profile_img: formVal.profilePhoto?.name,
       latitude: parseFloat(formVal.latitude),
       longitude: parseFloat(formVal.longitude),
       address: formVal.address,
       boarding_latitude: parseFloat(formVal.latitude),
       boarding_longitude: parseFloat(formVal.longitude),
-      boarding_address: formVal.boardingPoint,
+      boarding_address: formVal.address,
       status_id: 1,
     };
 

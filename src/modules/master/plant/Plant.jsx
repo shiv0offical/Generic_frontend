@@ -59,11 +59,6 @@ const handleEdit = (row) => {
       });
   };
 
-  const handleSearch = (value) => {
-    setSearchTerm(value.trim());
-    setPage(1);
-  };
-
   const tableData = plants.map((item, idx) => {
     const formattedDate = dayjs(item.created_at).format("YYYY-MM-DD");
     return {
@@ -108,11 +103,12 @@ const handleEdit = (row) => {
             data={tableData}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onSearch={handleSearch}
+            searchQuery={searchTerm}
+            setSearchQuery={setSearchTerm}
             totalCount={pagination?.total || 0}
             page={page}
             rowsPerPage={rowsPerPage}
-            onPageChange={setPage}
+            onPageChange={(newPage) => setPage(newPage + 1)}
             loading={loading}
             onRowsPerPageChange={(newRowsPerPage) => {
               setRowsPerPage(newRowsPerPage);
