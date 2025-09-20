@@ -50,9 +50,9 @@ function EmergencyAlert() {
             date: dayjs(item.created_at).format('YYYY-MM-DD'),
             vehicleNo: item?.vehicle_number,
             routeNo: item?.route_number,
-            routeName: item?.name,
-            driverName: item?.json_build_object?.name || '',
-            employeeName: `${item?.employee?.first_name || ''} ${item?.employee?.last_name || ''}`.trim(),
+            routeName: item?.route_name,
+            driverName: item?.driver?.name || '',
+            employeeName: item?.employee?.name || '',
             title: item?.title,
             message: item?.message,
             actionTaken: item?.action_taken,
@@ -64,7 +64,6 @@ function EmergencyAlert() {
           typeof res.data?.pagination?.total === 'number' ? res.data.pagination.total : res.data.alerts.length
         );
       } else if (res && res.success && Array.isArray(res.data)) {
-        // fallback for old API shape
         setAlerts(
           res.data.map((item, idx) => ({
             id: item?.id || idx + 1 + page * limit,
@@ -72,9 +71,9 @@ function EmergencyAlert() {
             date: dayjs(item.created_at).format('YYYY-MM-DD'),
             vehicleNo: item?.vehicle_number,
             routeNo: item?.route_number,
-            routeName: item?.name,
-            driverName: item?.json_build_object?.name || '',
-            employeeName: `${item?.employee?.first_name || ''} ${item?.employee?.last_name || ''}`.trim(),
+            routeName: item?.route_name,
+            driverName: item?.driver?.name || '',
+            employeeName: item?.employee?.name || '',
             title: item?.title,
             message: item?.message,
             actionTaken: item?.action_taken,

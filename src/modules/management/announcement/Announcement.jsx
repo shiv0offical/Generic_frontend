@@ -10,9 +10,9 @@ import { TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/mater
 
 const columns = [
   { key: 'id', header: 'Sr No' },
+  { key: 'title', header: 'Announcement Title' },
   { key: 'senderName', header: 'Sender Name' },
   { key: 'employeeName', header: 'Employee Name' },
-  { key: 'title', header: 'Announcement Title' },
   { key: 'message', header: 'Message' },
   { key: 'createdOn', header: 'Created On' },
 ];
@@ -43,9 +43,9 @@ function Announcement() {
         const formatData = (response.data.announcements || []).map((item, idx) => ({
           id: page * limit + idx + 1,
           announcementId: item.id,
+          title: item.title,
           senderName: item.senderName,
           employeeName: item.employeeName,
-          title: item.title,
           message: item.message,
           createdOn: dayjs(item.created_at).format('YYYY-MM-DD hh:mm A'),
         }));
