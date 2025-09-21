@@ -1,19 +1,7 @@
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Autocomplete,
-  FormControl,
-  TextField,
-  Typography,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Link } from 'react-router-dom';
-
-// const departments = [
-//   { label: "The Shawshank Redemption", value: "1994" },
-//   { label: "Department", value: "1994" },
-// ];
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Accordion, AccordionDetails, AccordionSummary } from '@mui/material';
+import { Autocomplete, FormControl, TextField, Typography } from '@mui/material';
 
 function FilterOption({
   handleClickFilter,
@@ -25,12 +13,10 @@ function FilterOption({
   setFile,
   handleExport,
   departments,
+  handleSample,
 }) {
   const handleChange = (event) => {
-    setFilterData({
-      ...filterData,
-      [event.target.name]: event.target.value,
-    });
+    setFilterData({ ...filterData, [event.target.name]: event.target.value });
   };
 
   const handleFileChange = (event) => {
@@ -77,10 +63,7 @@ function FilterOption({
                 size='small'
                 renderInput={(params) => <TextField {...params} label='Select Department' />}
                 onChange={(event, newValue) => {
-                  setFilterData({
-                    ...filterData,
-                    department: newValue ? newValue.value : '',
-                  });
+                  setFilterData({ ...filterData, department: newValue ? newValue.value : '' });
                 }}
                 value={departments.find((opt) => opt.value === filterData.department) || null}
               />
@@ -128,8 +111,9 @@ function FilterOption({
                 Import
               </button>
               <button
-                type='submit'
-                className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
+                type='button'
+                className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'
+                onClick={handleSample}>
                 Sample CSV
               </button>
               <div>

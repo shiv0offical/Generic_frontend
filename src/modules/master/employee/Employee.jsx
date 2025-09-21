@@ -13,49 +13,50 @@ import { Table, TableBody, TableCell, TableContainer } from '@mui/material';
 import { TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
 
 function Employee() {
-  const navigate = useNavigate();
   const fileInputRef = useRef();
+  const navigate = useNavigate();
   const companyID = localStorage.getItem('company_id');
 
-  const [empData, setEmpData] = useState([]);
-  const [displayData, setDisplayData] = useState([]);
-  const [filterData, setFilterData] = useState({ company_id: companyID, fromDate: '', toDate: '', department: '' });
-  const [file, setFile] = useState(null);
-
   const [page, setPage] = useState(0);
+  const [file, setFile] = useState(null);
   const [order, setOrder] = useState('asc');
+  const [empData, setEmpData] = useState([]);
   const [orderBy, setOrderBy] = useState('');
   const [totalCount, setTotalCount] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
+  const [displayData, setDisplayData] = useState([]);
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [filterData, setFilterData] = useState({ company_id: companyID, fromDate: '', toDate: '', department: '' });
 
   const formatEmp = (info, offset = 0) =>
     info?.map((data, idx) => ({
       id: offset + idx + 1,
       actual_id: data.id,
-      email: data.email,
-      punchId: data.punch_id,
-      employeeName: `${data.first_name} ${data.last_name}`,
-      employee_id: data.employee_id,
+      employeeName: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+      employee_id: data.employee_id || '-',
+      punch_id: data.punch_id || '-',
+      email: data.email || '-',
+      phone_number: data.phone_number || '-',
       plant: data.plant?.plant_name || '-',
-      plantId: data.plant_id,
+      plantId: data.plant_id || '-',
       department: data.department?.department_name || '-',
-      departmentId: data.department_id,
+      departmentId: data.department_id || '-',
       doj: data.date_of_joining ? dayjs(data.date_of_joining).format('YYYY-MM-DD') : '-',
       dob: data.date_of_birth ? dayjs(data.date_of_birth).format('YYYY-MM-DD') : '-',
-      gender: typeof data.gender === 'object' ? data.gender?.gender_name || '-' : data.gender || '-',
-      mobileNumber: data.phone_number,
-      routeId: data.vehicle_route_id,
-      routeName: data.vehicleRoute?.name || '-',
-      routeNumber: data.vehicleRoute?.route_number || '-',
-      boardingTime: '10:00 AM',
-      latitude: data.latitude,
-      longitude: data.longitude,
-      boardingPoint: data.boarding_address,
-      address: data.address,
-      status: data.status?.toLowerCase() === 'active' || data.status === 'Active' ? 'Active' : 'Inactive',
+      gender: data.gender ? (typeof data.gender === 'object' ? data.gender.gender_name || '-' : data.gender) : '-',
+      vehicle_route_id: data.vehicle_route_id || '-',
+      address: data.address || '-',
+      boarding_latitude: data.boarding_latitude ? Number(data.boarding_latitude).toFixed(7) : '-',
+      boarding_longitude: data.boarding_longitude ? Number(data.boarding_longitude).toFixed(7) : '-',
+      boarding_address: data.boarding_address || '-',
+      status:
+        (data.status || data.active === 1 ? 'Active' : 'Inactive').toString().toLowerCase() === 'active'
+          ? 'Active'
+          : 'Inactive',
+      active: data.active,
+      created_at: data.created_at ? dayjs(data.created_at).format('YYYY-MM-DD HH:mm') : '-',
     }));
 
   const fetchData = async (customPage = page, customRowsPerPage = rowsPerPage, customSearch = searchQuery) => {
@@ -245,6 +246,39 @@ function Employee() {
     }
   };
 
+  const handleSample = () => {
+    const columns = [
+      { key: 'first_name', label: 'First Name' },
+      { key: 'last_name', label: 'Last Name' },
+      { key: 'employee_id', label: 'Employee ID' },
+      { key: 'punch_id', label: 'Punch ID' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone_number', label: 'Phone Number' },
+      { key: 'date_of_joining', label: 'Date of Joining (YYYY-MM-DD)' },
+      { key: 'date_of_birth', label: 'Date of Birth (YYYY-MM-DD)' },
+      { key: 'gender', label: 'Gender (Male/Female/Other)' },
+      { key: 'vehicle_route_id', label: 'Vehicle Route ID' },
+      { key: 'address', label: 'Address' },
+      { key: 'boarding_latitude', label: 'Boarding Latitude' },
+      { key: 'boarding_longitude', label: 'Boarding Longitude' },
+      { key: 'boarding_address', label: 'Boarding Address' },
+    ];
+    const keys = columns.map((col) => col.key);
+    const labels = columns.map((col) => col.label);
+    const row = keys.map(() => '');
+    const csv = [labels, row]
+      .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: 'employee_sample.csv',
+    });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   useEffect(() => {
     fetchData(page, rowsPerPage, searchQuery);
     // eslint-disable-next-line
@@ -262,14 +296,20 @@ function Employee() {
     { key: 'srNo', header: 'Sr No', render: (_row) => _row.id },
     { key: 'employeeName', header: 'Employee Name' },
     { key: 'employee_id', header: 'Employee ID' },
+    { key: 'punch_id', header: 'Punch ID' },
+    { key: 'email', header: 'Email' },
+    { key: 'phone_number', header: 'Phone Number' },
     { key: 'plant', header: 'Plant' },
     { key: 'department', header: 'Department' },
-    { key: 'doj', header: 'DOJ' },
+    { key: 'doj', header: 'Date of Joining' },
+    { key: 'dob', header: 'Date of Birth' },
     { key: 'gender', header: 'Gender' },
-    { key: 'mobileNumber', header: 'Mobile Number' },
-    { key: 'routeName', header: 'Route Name' },
-    { key: 'routeNumber', header: 'Route Number' },
-    { key: 'boardingTime', header: 'Boarding Time' },
+    { key: 'vehicle_route_id', header: 'Vehicle Route ID' },
+    { key: 'address', header: 'Address' },
+    { key: 'boarding_latitude', header: 'Boarding Latitude' },
+    { key: 'boarding_longitude', header: 'Boarding Longitude' },
+    { key: 'boarding_address', header: 'Boarding Address' },
+    { key: 'created_at', header: 'Created On' },
     {
       key: 'status',
       header: 'Status',
@@ -331,6 +371,7 @@ function Employee() {
         setFile={setFile}
         file={file}
         handleExport={handleExport}
+        handleSample={handleSample}
         departments={departmentOption}
       />
 
