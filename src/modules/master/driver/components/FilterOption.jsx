@@ -10,20 +10,15 @@ function FilterOption({
   handleFileUpload,
   setFile,
   handleExport,
+  handleSample,
 }) {
   const handleChange = (event) => {
-    setFilterData({
-      ...filterData,
-      [event.target.name]: event.target.value,
-    });
+    setFilterData({ ...filterData, [event.target.name]: event.target.value });
   };
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    setFile({
-      ...file,
-      file: file,
-    });
+    setFile({ ...file, file: file });
   };
 
   return (
@@ -99,7 +94,8 @@ function FilterOption({
               </button>
               <button
                 type='submit'
-                className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
+                className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'
+                onClick={handleSample}>
                 Sample CSV
               </button>
               <div>
@@ -107,7 +103,7 @@ function FilterOption({
                   <button
                     type='button'
                     className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
-                    New Bus Driver
+                    New Vehicle Driver
                   </button>
                 </Link>
               </div>

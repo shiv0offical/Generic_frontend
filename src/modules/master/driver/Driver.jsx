@@ -18,6 +18,16 @@ const columns = [
   { key: 'id', header: 'Sr No' },
   { key: 'driverName', header: 'Driver Name' },
   { key: 'driverEmail', header: 'Driver Email' },
+  { key: 'phoneNumber', header: 'Phone Number' },
+  { key: 'dateOfBirth', header: 'Date of Birth' },
+  { key: 'address', header: 'Address' },
+  { key: 'punchId', header: 'Punch ID' },
+  { key: 'drivingLicenceNo', header: 'Driving Licence No' },
+  { key: 'drivingLicenceIssueDate', header: 'Licence Issue Date' },
+  { key: 'drivingLicenceExpiryDate', header: 'Licence Expiry Date' },
+  { key: 'latitude', header: 'Latitude' },
+  { key: 'longitude', header: 'Longitude' },
+  { key: 'createdAt', header: 'Created At' },
   {
     key: 'status',
     header: 'Status',
@@ -29,26 +39,60 @@ const columns = [
       </button>
     ),
   },
-  { key: 'createdAt', header: 'Created At' },
 ];
+
+const handleSample = () => {
+  const sampleFields = [
+    { key: 'first_name', header: 'First Name' },
+    { key: 'last_name', header: 'Last Name' },
+    { key: 'email', header: 'Email' },
+    { key: 'phone_number', header: 'Phone Number' },
+    { key: 'date_of_birth', header: 'Date of Birth' },
+    { key: 'address', header: 'Address' },
+    { key: 'punch_id', header: 'Punch ID' },
+    { key: 'driving_licence', header: 'Driving Licence No' },
+    { key: 'driving_licence_issue_date', header: 'Licence Issue Date' },
+    { key: 'driving_licence_expire_date', header: 'Licence Expiry Date' },
+    { key: 'latitude', header: 'Latitude' },
+    { key: 'longitude', header: 'Longitude' },
+  ];
+
+  const headers = sampleFields.map((field) => field.header);
+  const emptyRow = sampleFields.reduce((acc, field) => {
+    acc[field.header] = '';
+    return acc;
+  }, {});
+
+  const worksheet = XLSX.utils.json_to_sheet([emptyRow], { header: headers });
+  worksheet['!cols'] = sampleFields.map(() => ({ wch: 20 }));
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'SampleDriver');
+  XLSX.writeFile(workbook, 'driver_sample.xlsx');
+};
+
+const formatDate = (date) => {
+  if (!date) return '';
+  const d = dayjs(date);
+  return d.isValid() ? d.format('YYYY-MM-DD') : '';
+};
 
 const formatDriver = (info) =>
   info?.map((data, idx) => ({
     id: idx + 1,
-    driverName: `${data.first_name} ${data.last_name}`,
-    driverEmail: data.email,
+    driverName: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+    driverEmail: data.email || '',
     status: data.active,
-    punchId: data.punch_id,
-    phoneNumber: data.phone_number,
-    createdAt: dayjs(data.created_at).format('YYYY-MM-DD'),
+    punchId: data.punch_id || '',
+    phoneNumber: data.phone_number || '',
+    createdAt: formatDate(data.created_at),
     actual_id: data.id,
-    dateOfBirth: dayjs(data.date_of_birth).format('YYYY-MM-DD'),
-    drivingLicenceNo: data.driving_licence,
-    drivingLicenceIssueDate: dayjs(data.driving_licence_issue_date).format('YYYY-MM-DD'),
-    drivingLicenceExpiryDate: dayjs(data.driving_licence_expire_date).format('YYYY-MM-DD'),
-    address: data.address,
-    latitude: data.latitude,
-    longitude: data.longitude,
+    dateOfBirth: formatDate(data.date_of_birth),
+    drivingLicenceNo: data.driving_licence || '',
+    drivingLicenceIssueDate: formatDate(data.driving_licence_issue_date),
+    drivingLicenceExpiryDate: formatDate(data.driving_licence_expire_date),
+    address: data.address || '',
+    latitude: data.latitude !== null && data.latitude !== undefined ? data.latitude : '',
+    longitude: data.longitude !== null && data.longitude !== undefined ? data.longitude : '',
   }));
 
 const Driver = () => {
@@ -60,7 +104,7 @@ const Driver = () => {
   const [file, setFile] = useState(null);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [filterData, setFilterData] = useState({ fromDate: '', toDate: '' });
@@ -89,6 +133,9 @@ const Driver = () => {
     return [...driverValue].sort((a, b) => {
       const valueA = a[orderBy];
       const valueB = b[orderBy];
+      if (valueA == null && valueB == null) return 0;
+      if (valueA == null) return order === 'asc' ? -1 : 1;
+      if (valueB == null) return order === 'asc' ? 1 : -1;
       if (typeof valueA === 'string')
         return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
       return order === 'asc' ? valueA - valueB : valueB - valueA;
@@ -132,19 +179,75 @@ const Driver = () => {
     console.log(file);
   };
 
-  const handleExport = () => {
-    const exportData = driverValue.map((row) => ({
-      'Sr No': row.id,
-      'Driver Name': row.driverName,
-      'Driver Email': row.driverEmail,
-      Status: row.status === 1 ? 'Active' : 'Inactive',
-      'Created At': row.createdAt,
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    worksheet['!cols'] = [{ wch: 8 }, { wch: 25 }, { wch: 30 }, { wch: 12 }, { wch: 18 }];
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Drivers');
-    XLSX.writeFile(workbook, 'drivers.xlsx');
+  const handleExport = async () => {
+    try {
+      const result = await dispatch(
+        fetchDrivers({
+          page: 1,
+          limit: totalCount,
+          search: searchTerm,
+          from_date: filterData?.fromDate,
+          to_date: filterData?.toDate,
+        })
+      ).unwrap();
+
+      const exportDrivers = result?.data || result?.drivers || [];
+
+      const exportDriverRows = formatDriver(exportDrivers);
+
+      const exportData = exportDriverRows.map((row) => {
+        const rowData = {};
+        columns.forEach((col) => {
+          if (col.key === 'status') {
+            rowData[col.header] = row.status === 1 ? 'Active' : 'Inactive';
+          } else {
+            rowData[col.header] = row[col.key] !== null && row[col.key] !== undefined ? row[col.key] : '';
+          }
+        });
+        return rowData;
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData, { header: columns.map((col) => col.header) });
+      worksheet['!cols'] = columns.map((col) => {
+        switch (col.key) {
+          case 'id':
+            return { wch: 8 };
+          case 'driverName':
+            return { wch: 25 };
+          case 'driverEmail':
+            return { wch: 30 };
+          case 'phoneNumber':
+            return { wch: 15 };
+          case 'dateOfBirth':
+            return { wch: 15 };
+          case 'address':
+            return { wch: 20 };
+          case 'punchId':
+            return { wch: 12 };
+          case 'drivingLicenceNo':
+            return { wch: 18 };
+          case 'drivingLicenceIssueDate':
+            return { wch: 18 };
+          case 'drivingLicenceExpiryDate':
+            return { wch: 18 };
+          case 'latitude':
+            return { wch: 12 };
+          case 'longitude':
+            return { wch: 12 };
+          case 'createdAt':
+            return { wch: 18 };
+          case 'status':
+            return { wch: 12 };
+          default:
+            return { wch: 15 };
+        }
+      });
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Drivers');
+      XLSX.writeFile(workbook, 'drivers.xlsx');
+    } catch (err) {
+      toast.error('Failed to export drivers', { position: 'top-right' });
+    }
   };
 
   const handleStatusChange = () => {
@@ -203,9 +306,10 @@ const Driver = () => {
         setFile={setFile}
         file={file}
         handleExport={handleExport}
+        handleSample={handleSample}
       />
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
-        <TableContainer sx={{ maxHeight: 400, overflowX: 'auto', position: 'relative' }}>
+        <TableContainer sx={{ maxHeight: 720, overflowX: 'auto', position: 'relative' }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
@@ -240,7 +344,11 @@ const Driver = () => {
                   <TableRow key={row.id}>
                     {columns.map((column) => (
                       <TableCell className='whitespace-nowrap' key={column.key}>
-                        {column.render ? column.render(row[column.key], row, handleStatusClick) : row[column.key]}
+                        {column.render
+                          ? column.render(row[column.key], row, handleStatusClick)
+                          : row[column.key] !== null && row[column.key] !== undefined
+                          ? row[column.key]
+                          : ''}
                       </TableCell>
                     ))}
                     <TableCell>
@@ -269,7 +377,7 @@ const Driver = () => {
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 20]}
+          rowsPerPageOptions={[10, 15, 20, 25, 30]}
           component='div'
           count={totalCount}
           rowsPerPage={rowsPerPage}

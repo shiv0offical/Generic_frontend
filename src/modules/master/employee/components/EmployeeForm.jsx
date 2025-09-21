@@ -245,72 +245,89 @@ function EmployeeForm() {
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Employee Last Name</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Employee Last Name <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='text'
                     name='lastName'
                     id='lastName'
                     fullWidth
+                    required
                     placeholder='Employee Last Name'
                     value={formVal.lastName}
                     onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Employee Id</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Employee Id <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='text'
                     name='employeeId'
                     id='employeeId'
                     fullWidth
+                    required
                     placeholder='Employee Id'
                     value={formVal.employeeId}
                     onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Punch Id</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Punch Id <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='text'
                     name='punchId'
                     id='punchId'
                     fullWidth
+                    required
                     placeholder='Punch Id'
                     value={formVal.punchId}
                     onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Email</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Email <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='email'
                     name='email'
                     id='email'
                     fullWidth
+                    required
                     placeholder='Email'
                     value={formVal.email}
                     onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Phone Number</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Phone Number <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='number'
                     name='phoneNumber'
                     id='phoneNumber'
                     fullWidth
+                    required
                     placeholder='Phone Number'
                     value={formVal.phoneNumber}
                     onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Select Department</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Select Department <span className='text-red-500'>*</span>
+                  </label>
                   <Autocomplete
                     disablePortal
                     options={departmentDropdown.options}
@@ -321,7 +338,9 @@ function EmployeeForm() {
                     }
                     isOptionEqualToValue={(option, value) => option?.value === value?.value}
                     getOptionLabel={(option) => option?.label || ''}
-                    renderInput={(params) => <TextField {...params} label='Select Department' size='small' fullWidth />}
+                    renderInput={(params) => (
+                      <TextField {...params} label='Select Department' size='small' fullWidth required />
+                    )}
                   />
                   {departmentDropdown.error && (
                     <p className='text-red-500 text-sm mt-1'>
@@ -336,7 +355,9 @@ function EmployeeForm() {
                   )}
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Select Plant</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Select Plant <span className='text-red-500'>*</span>
+                  </label>
                   <Autocomplete
                     disablePortal
                     options={plantDropdown.options}
@@ -347,7 +368,9 @@ function EmployeeForm() {
                     }
                     isOptionEqualToValue={(option, value) => option?.value === value?.value}
                     getOptionLabel={(option) => option?.label || ''}
-                    renderInput={(params) => <TextField {...params} label='Select Plant' size='small' fullWidth />}
+                    renderInput={(params) => (
+                      <TextField {...params} label='Select Plant' size='small' fullWidth required />
+                    )}
                   />
                   {plantDropdown.error && (
                     <p className='text-red-500 text-sm mt-1'>
@@ -362,26 +385,32 @@ function EmployeeForm() {
                   )}
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Joining Date</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Joining Date <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='date'
                     name='dateOfJoining'
                     id='dateOfJoining'
                     fullWidth
+                    required
                     placeholder='Joining Date'
                     value={formVal.dateOfJoining}
                     onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Date Of Birth</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Date Of Birth <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='date'
                     name='dateOfBirth'
                     id='dateOfBirth'
                     fullWidth
+                    required
                     placeholder='Date Of Birth'
                     value={formVal.dateOfBirth}
                     onChange={handleChange}
@@ -446,7 +475,9 @@ function EmployeeForm() {
                 </div>
                 <div>
                   <FormControl>
-                    <FormLabel id='gender-radio'>Gender</FormLabel>
+                    <FormLabel id='gender-radio'>
+                      Gender <span className='text-red-500'>*</span>
+                    </FormLabel>
                     <RadioGroup
                       aria-labelledby='gender-radio'
                       value={formVal.selectedGender}
@@ -537,26 +568,32 @@ function EmployeeForm() {
               </div>
               <div className='grid grid-col-1 md:grid-cols-2 gap-3 mt-3'>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Latitude</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Latitude <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='text'
                     name='latitude'
                     id='latitude'
                     fullWidth
+                    required
                     placeholder='Latitude'
                     value={formVal.latitude}
                     onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Longitude</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>
+                    Longitude <span className='text-red-500'>*</span>
+                  </label>
                   <TextField
                     size='small'
                     type='text'
                     name='longitude'
                     id='longitude'
                     fullWidth
+                    required
                     placeholder='Longitude'
                     value={formVal.longitude}
                     onChange={handleChange}

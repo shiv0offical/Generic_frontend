@@ -99,7 +99,7 @@ const CommonTable = ({
         </Table>
       </TableContainer>
       <TablePagination
-        rowsPerPageOptions={[5, 10, 20]}
+        rowsPerPageOptions={[10, 15, 20, 25, 30]}
         component='div'
         count={totalCount}
         rowsPerPage={rowsPerPage}

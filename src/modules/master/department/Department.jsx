@@ -16,10 +16,10 @@ const columns = [
 
 const Department = () => {
   const dispatch = useDispatch();
+  const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
 
   const { departments, pagination, loading } = useSelector((state) => state.department);

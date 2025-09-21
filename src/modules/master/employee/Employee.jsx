@@ -30,6 +30,27 @@ function Employee() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [filterData, setFilterData] = useState({ company_id: companyID, fromDate: '', toDate: '', department: '' });
 
+  const exportHeaders = [
+    { key: 'srNo', header: 'Sr No' },
+    { key: 'employeeName', header: 'Employee Name' },
+    { key: 'employee_id', header: 'Employee ID' },
+    { key: 'punch_id', header: 'Punch ID' },
+    { key: 'email', header: 'Email' },
+    { key: 'phone_number', header: 'Phone Number' },
+    { key: 'plant', header: 'Plant' },
+    { key: 'department', header: 'Department' },
+    { key: 'doj', header: 'Date of Joining' },
+    { key: 'dob', header: 'Date of Birth' },
+    { key: 'gender', header: 'Gender' },
+    { key: 'vehicle_route_id', header: 'Vehicle Route ID' },
+    { key: 'address', header: 'Address' },
+    { key: 'boarding_latitude', header: 'Boarding Latitude' },
+    { key: 'boarding_longitude', header: 'Boarding Longitude' },
+    { key: 'boarding_address', header: 'Boarding Address' },
+    { key: 'created_at', header: 'Created On' },
+    { key: 'status', header: 'Status' },
+  ];
+
   const formatEmp = (info, offset = 0) =>
     info?.map((data, idx) => ({
       id: offset + idx + 1,
@@ -221,11 +242,14 @@ function Employee() {
 
       if (!fullData?.length) return alert('No data available to export.');
 
-      const cols = columns.filter((c) => c.key !== 'action');
+      const cols = exportHeaders;
       const headers = cols.map((c) => c.header);
 
       const rows = fullData.map((row, i) =>
-        cols.map((col) => (col.key === 'srNo' ? i + 1 : col.key === 'status' ? row.status : row[col.key] ?? ''))
+        cols.map((col) => {
+          if (col.key === 'srNo') return i + 1;
+          return row[col.key] ?? '';
+        })
       );
 
       const csv = [headers, ...rows]
@@ -293,37 +317,26 @@ function Employee() {
   ]);
 
   const columns = [
-    { key: 'srNo', header: 'Sr No', render: (_row) => _row.id },
-    { key: 'employeeName', header: 'Employee Name' },
-    { key: 'employee_id', header: 'Employee ID' },
-    { key: 'punch_id', header: 'Punch ID' },
-    { key: 'email', header: 'Email' },
-    { key: 'phone_number', header: 'Phone Number' },
-    { key: 'plant', header: 'Plant' },
-    { key: 'department', header: 'Department' },
-    { key: 'doj', header: 'Date of Joining' },
-    { key: 'dob', header: 'Date of Birth' },
-    { key: 'gender', header: 'Gender' },
-    { key: 'vehicle_route_id', header: 'Vehicle Route ID' },
-    { key: 'address', header: 'Address' },
-    { key: 'boarding_latitude', header: 'Boarding Latitude' },
-    { key: 'boarding_longitude', header: 'Boarding Longitude' },
-    { key: 'boarding_address', header: 'Boarding Address' },
-    { key: 'created_at', header: 'Created On' },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (row) => (
-        <button
-          onClick={() => {
-            setSelectedEmp(row);
-            setIsStatusModalOpen(true);
-          }}
-          className={`text-white px-2 py-1 rounded text-sm ${row.status === 'Active' ? 'bg-green-600' : 'bg-red-600'}`}>
-          {row.status}
-        </button>
-      ),
-    },
+    ...exportHeaders.map((col) => {
+      if (col.key === 'status') {
+        return {
+          ...col,
+          render: (row) => (
+            <button
+              onClick={() => {
+                setSelectedEmp(row);
+                setIsStatusModalOpen(true);
+              }}
+              className={`text-white px-2 py-1 rounded text-sm 
+                ${row.status === 'Active' ? 'bg-green-600' : 'bg-red-600'}`}>
+              {row.status}
+            </button>
+          ),
+        };
+      }
+      if (col.key === 'srNo') return { ...col, render: (_row) => _row.id };
+      return col;
+    }),
   ];
 
   const departmentOption = Array.from(

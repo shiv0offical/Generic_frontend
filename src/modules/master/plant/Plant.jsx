@@ -19,10 +19,10 @@ const Plant = () => {
 
   const { plants, pagination, loading } = useSelector((state) => state.plant);
 
+  const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -30,7 +30,6 @@ const Plant = () => {
   }, [dispatch, page, rowsPerPage, searchTerm]);
 
   const handleEdit = (row) => {
-    // fetch the plant details by ID
     dispatch(fetchPlantById(row.plantID)).then(() => {
       setIsModalOpen(true);
       setSelectedRow(row);
@@ -58,7 +57,7 @@ const Plant = () => {
   const tableData = plants.map((item, idx) => {
     const formattedDate = dayjs(item.created_at).format('YYYY-MM-DD');
     return {
-      id: (page - 1) * rowsPerPage + (idx + 1), // continuous numbering
+      id: (page - 1) * rowsPerPage + (idx + 1),
       plantID: item.id,
       name: item.plant_name,
       createdAt: formattedDate,

@@ -1,6 +1,6 @@
-import { Accordion, AccordionDetails, AccordionSummary, TextField, Typography } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Link } from 'react-router-dom';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Accordion, AccordionDetails, AccordionSummary, TextField, Typography } from '@mui/material';
 
 function FilterOption({
   handleClickFilter,
@@ -10,6 +10,7 @@ function FilterOption({
   handleFileUpload,
   setFile,
   handleExport,
+  handleSample,
 }) {
   const handleChange = (event) => {
     setFilterData({ ...filterData, [event.target.name]: event.target.value });
@@ -90,8 +91,9 @@ function FilterOption({
                 Import
               </button>
               <button
-                type='submit'
-                className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
+                type='button'
+                className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'
+                onClick={handleSample}>
                 Sample CSV
               </button>
               <div>
@@ -99,7 +101,7 @@ function FilterOption({
                   <button
                     type='button'
                     className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
-                    New Bus
+                    New Vehicle
                   </button>
                 </Link>
               </div>

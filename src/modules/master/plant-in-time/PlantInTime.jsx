@@ -24,10 +24,10 @@ function PlantInTime() {
   const companyID = localStorage.getItem('company_id');
   const navigate = useNavigate();
 
+  const [page, setPage] = useState(1);
   const [filterData, setFilterData] = useState({ bus: '', busRoute: '', company_id: companyID });
   const [plantData, setPlantData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
