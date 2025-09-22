@@ -13,9 +13,7 @@ export const fetchEmergencyReportAlert = createAsyncThunk(
   }
 );
 
-const initialState = {
-  emergencyReportAlertData: [],
-};
+const initialState = { emergencyReportAlertData: [] };
 
 const emergencyReportAlertReducer = createSlice({
   name: 'emergencyReportAlert',

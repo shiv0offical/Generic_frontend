@@ -1,26 +1,17 @@
-import { useCallback } from "react";
-import { useAuth } from "../context/AuthContext";
-import { toast } from "react-toastify";
+import { useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
-const API_BASE_PATH = "http://localhost:8080/api/v1";
-// Custom hook for HTTP requests
+const API_BASE_PATH = 'http://localhost:8080/api/v1';
+
 const useHttp = () => {
   const { token } = useAuth();
   const request = useCallback(
-    async ({
-      url,
-      method = "GET",
-      body = null,
-      headers = {},
-      showSuccessToast = false,
-    }) => {
+    async ({ url, method = 'GET', body = null, headers = {}, showSuccessToast = false }) => {
       try {
-        headers = { ...headers, "Content-Type": "application/json" };
+        headers = { ...headers, 'Content-Type': 'application/json' };
         const configHeaders = new Headers(headers);
-
-        if (token) {
-          configHeaders.append("Authorization", `Bearer ${token}`);
-        }
+        if (token) configHeaders.append('Authorization', `Bearer ${token}`);
 
         const response = await fetch(API_BASE_PATH + url, {
           method,
@@ -33,17 +24,15 @@ const useHttp = () => {
           toast.error(errorData.message);
           throw new Error(errorData.message);
         }
-        if (showSuccessToast) {
-          toast.success("Operation successful");
-        }
+        if (showSuccessToast) toast.success('Operation successful');
 
         return response;
       } catch (error) {
-        console.error("HTTP request failed:", error);
+        console.error('HTTP request failed:', error);
         throw error;
       }
     },
-    [token] // Dependencies array
+    [token]
   );
 
   return { request };

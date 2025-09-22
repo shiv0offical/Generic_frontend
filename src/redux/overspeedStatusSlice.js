@@ -1,9 +1,9 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = { previousData: [], currentData: [], days: [] };
 //for overspeed violation dashboard
 const overspeedStatusSlice = createSlice({
-  name: "overspeedStatus",
+  name: 'overspeedStatus',
   initialState,
   reducers: {
     setPreviousData(state, action) {
@@ -20,6 +20,5 @@ const overspeedStatusSlice = createSlice({
   },
 });
 
-export const { setPreviousData, setCurrentData, setDays } =
-  overspeedStatusSlice.actions;
+export const { setPreviousData, setCurrentData, setDays } = overspeedStatusSlice.actions;
 export default overspeedStatusSlice.reducer;

@@ -7,11 +7,7 @@ export const fetchVehicleReport = createAsyncThunk(
   async ({ company_id, from_date, to_date }, thunkAPI) => {
     try {
       const response = await ApiService.get('/vehicle', {
-        params: {
-          company_id,
-          from_date,
-          to_date,
-        },
+        params: { company_id, from_date, to_date },
       });
       return response.data;
     } catch (error) {
@@ -38,12 +34,7 @@ export const fetchSeatOccupancyReport = createAsyncThunk(
   'vehicleReport/fetchSeatOccupancyReport',
   async ({ company_id, route_id, start, end }, thunkAPI) => {
     try {
-      const response = await ApiService.get('seatoccupancy', {
-        company_id,
-        route_id,
-        start,
-        end,
-      });
+      const response = await ApiService.get('seatoccupancy', { company_id, route_id, start, end });
       return response;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);

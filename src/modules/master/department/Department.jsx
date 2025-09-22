@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import IModal from '../../../components/modal/Modal';
 import { useDispatch, useSelector } from 'react-redux';
 import DepartmentForm from './components/DepartmentForm';
+import CommonSearch from '../../../components/CommonSearch';
 import CommanTable from '../../../components/table/CommonTable';
 import { fetchDepartmentById, fetchDepartments } from '../../../redux/departmentSlice';
 import { clearSelectedDepartment, deleteDepartment } from '../../../redux/departmentSlice';
-import CommonSearch from '../../../components/CommonSearch';
 
 const columns = [
   { key: 'id', header: 'ID' },

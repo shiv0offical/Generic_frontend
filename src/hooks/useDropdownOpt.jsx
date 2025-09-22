@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ApiService } from "../services";
+import { useEffect, useState } from 'react';
+import { ApiService } from '../services';
 
 export const useDropdownOpt = ({
   apiUrl,
@@ -19,31 +19,22 @@ export const useDropdownOpt = ({
     setError(null);
     try {
       const res = await ApiService.get(apiUrl, query);
-      
-      //handle both array and object response
-      let rawData = res?.data;
 
-      if (Array.isArray(rawData)) {
-        // already an array
-      } else if (dataKey && rawData?.[dataKey]) {
-        rawData = rawData[dataKey];
-      } else if (rawData?.data) {
-        // fallback if wrapped in { data: [...] }
-        rawData = rawData.data;
-      } else {
-        rawData = [];
+      let rawData = [];
+      if (Array.isArray(res?.data)) {
+        rawData = res.data;
+      } else if (dataKey && res?.data?.[dataKey]) {
+        rawData = res.data[dataKey];
+      } else if (res?.data?.data) {
+        rawData = res.data.data;
       }
 
-      
       const opt = rawData.map((item) => ({
         label: labelSelector(item),
         value: valueSelector(item),
       }));
 
-      // remove duplicates
-      const uniqOpt = Array.from(
-        new Map(opt.map((opt) => [opt.value, opt])).values()
-      );
+      const uniqOpt = Array.from(new Map(opt.map((o) => [o.value, o])).values());
       setOptions(uniqOpt);
     } catch (err) {
       setError(err);
@@ -54,10 +45,10 @@ export const useDropdownOpt = ({
 
   useEffect(() => {
     if (autoFetch) fetchOption();
-  }, [apiUrl, JSON.stringify(query)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiUrl, JSON.stringify(query), autoFetch]);
 
-  useEffect(() => {
-  }, [options]);
+  useEffect(() => {}, [options]);
 
   return { options, loading, error, refetch: fetchOption };
 };

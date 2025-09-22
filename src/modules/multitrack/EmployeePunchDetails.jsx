@@ -1,13 +1,5 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-} from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer } from '@mui/material';
+import { TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ApiService } from '../../services';
@@ -93,14 +85,12 @@ function EmployeePunchDetails() {
   };
 
   const sortedData = [...punhcData].sort((a, b) => {
-    // const sortedData = [...data].sort((a, b) => {
     if (!orderBy) return 0;
     const valueA = a[orderBy];
     const valueB = b[orderBy];
 
-    if (typeof valueA === 'string') {
+    if (typeof valueA === 'string')
       return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    }
     return order === 'asc' ? valueA - valueB : valueB - valueA;
   });
 

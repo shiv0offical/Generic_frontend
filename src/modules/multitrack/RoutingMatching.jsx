@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet-routing-machine';
 import { useMap } from 'react-leaflet';
 import car from '../../assets/logo.png';
+import { useEffect, useRef, useState } from 'react';
 
 const RoutingMatching = ({ coordinates, speed, isPlaying }) => {
   const map = useMap();

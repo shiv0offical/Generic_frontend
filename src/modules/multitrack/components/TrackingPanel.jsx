@@ -64,7 +64,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
   return (
     <>
       <div
-        className={`absolute transition-all top-0 rounded-md bg-white h-[calc(100vh-60px)] p-3 z-[99999] 
+        className={`absolute transition-all top-0 rounded-md bg-white h-[calc(100vh-30px)] p-3 z-[99999] 
           ${isTrackShow ? '-left-[452px]' : 'left-0'} w-[452px]`}>
         <div
           className='absolute top-10 -right-5 h-14 bg-[#FFF] cursor-pointer rounded-tr-lg rounded-br-lg text-4xl flex items-center justify-center'
@@ -182,7 +182,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
             </div>
           </div>
         </div>
-        <div className='border border-[#1d31a6] rounded-md h-[522px] relative'>
+        <div className='border border-[#1d31a6] rounded-md h-[666px] relative'>
           <div className='flex flex-row'>
             {vehicleStatus.map((tab) => (
               <button
@@ -206,7 +206,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
           <div className='p-1 border-b-1 border-[gray]'>
             <ISearch onChange={handleSearch} />
           </div>
-          <div className='mhe-list p-2 mt-2 h-[420px] overflow-y-scroll'>
+          <div className='mhe-list p-2 mt-2 h-[555px] overflow-y-scroll'>
             {filteredResult.map((device) => (
               // {filteredDevices.map((device) => (
               <div

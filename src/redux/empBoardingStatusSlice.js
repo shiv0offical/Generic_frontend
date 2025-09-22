@@ -1,10 +1,10 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = { previousData: [], currentData: [], days: [] };
 
 //for employee onboard dashboard
 const empBoardingStatusSlice = createSlice({
-  name: "empBoardingStatus",
+  name: 'empBoardingStatus',
   initialState,
   reducers: {
     setPreviousData(state, action) {
@@ -21,6 +21,5 @@ const empBoardingStatusSlice = createSlice({
   },
 });
 
-export const { setPreviousData, setCurrentData, setDays } =
-  empBoardingStatusSlice.actions;
+export const { setPreviousData, setCurrentData, setDays } = empBoardingStatusSlice.actions;
 export default empBoardingStatusSlice.reducer;

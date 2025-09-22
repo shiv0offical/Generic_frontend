@@ -1,10 +1,9 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = { totalOnboardEmp: 0, todayEmergency: 0 };
 
-//for counter card dashboard
 const counterCardSlice = createSlice({
-  name: "counterCard",
+  name: 'counterCard',
   initialState,
   reducers: {
     setTotalOnboardEmp(state, action) {
@@ -17,6 +16,5 @@ const counterCardSlice = createSlice({
   },
 });
 
-export const { setTotalOnboardEmp, setTodayEmergency } =
-  counterCardSlice.actions;
+export const { setTotalOnboardEmp, setTodayEmergency } = counterCardSlice.actions;
 export default counterCardSlice.reducer;

@@ -5,85 +5,52 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 let socket = null;
 
 const connectSocket = (dispatch) => {
+  if (!SOCKET_URL) return Promise.reject(new Error('SOCKET_URL not defined'));
+  if (socket && socket.connected) return Promise.resolve(socket);
+
+  socket = io(SOCKET_URL, {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 2,
+    reconnectionDelay: 1500,
+    timeout: 2000,
+    forceNew: true,
+  });
+
   return new Promise((resolve, reject) => {
-    try {
-      if (!SOCKET_URL) {
-        return reject(new Error('❌ SOCKET_URL is not defined'));
+    const timer = setTimeout(() => {
+      disconnectSocket();
+      reject(new Error('Socket connection timed out'));
+    }, 5000);
+
+    socket.once('connect', () => {
+      clearTimeout(timer);
+      resolve(socket);
+    });
+    socket.once('connect_error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
+    socket.on('disconnect', () => {});
+    socket.on('reconnect_failed', disconnectSocket);
+
+    socket.off('gpsData');
+    socket.on('gpsData', (data) => {
+      try {
+        dispatch(updatedData(data));
+      } catch (e) {
+        // ignore
       }
-
-      // If socket already exists and is connected
-      if (socket && socket.connected) {
-        console.log('🟢 Socket already connected.');
-        return resolve(socket);
-      }
-
-      // Initialize socket
-      socket = io(SOCKET_URL, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 2, // quicker fail
-        reconnectionDelay: 1500,
-        timeout: 2000, // fail faster
-        forceNew: true,
-      });
-
-      // Failsafe timer (stop waiting after 5s max)
-      const timer = setTimeout(() => {
-        console.error('⏱️ Socket connection timed out');
-        disconnectSocket();
-        reject(new Error('Socket connection timed out'));
-      }, 5000);
-
-      // On successful connect
-      socket.once('connect', () => {
-        clearTimeout(timer);
-        console.log('✅ Connected to WebSocket server');
-        resolve(socket);
-      });
-
-      // On connection error
-      socket.once('connect_error', (err) => {
-        clearTimeout(timer);
-        console.error('⚠️ Connection Error:', err.message || err);
-        reject(err);
-      });
-
-      // On disconnect
-      socket.on('disconnect', (reason) => {
-        console.warn('❌ Disconnected from WebSocket:', reason);
-      });
-
-      // On reconnection failure
-      socket.on('reconnect_failed', () => {
-        console.error('🚫 All reconnection attempts failed.');
-        disconnectSocket();
-      });
-
-      // GPS Data listener
-      socket.off('gpsData');
-      socket.on('gpsData', (data) => {
-        try {
-          dispatch(updatedData(data));
-        } catch (error) {
-          console.error('⚠️ Error dispatching GPS data:', error);
-        }
-      });
-    } catch (error) {
-      reject(error);
-    }
+    });
   });
 };
 
 const disconnectSocket = () => {
-  try {
-    if (socket) {
-      socket.off('gpsData');
-      socket.disconnect();
-      socket = null;
-      console.log('🔌 Socket manually disconnected');
-    }
-  } catch (error) {
-    console.error('⚠️ Error disconnecting socket:', error);
+  if (socket) {
+    socket.off('gpsData');
+    socket.disconnect();
+    socket = null;
   }
 };
 

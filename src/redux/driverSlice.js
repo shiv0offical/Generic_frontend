@@ -1,67 +1,51 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { ApiService } from "../services";
-import { APIURL } from "../constants";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { ApiService } from '../services';
+import { APIURL } from '../constants';
 
 export const fetchDrivers = createAsyncThunk(
-  "driver/fetchDrivers",
-  async (
-    { page = 1, limit = 10, search = "", from_date = "", to_date = "" },
-    { rejectWithValue }
-  ) => {
+  'driver/fetchDrivers',
+  async ({ page = 1, limit = 10, search = '', from_date = '', to_date = '' }, { rejectWithValue }) => {
     try {
-      const res = await ApiService.get(APIURL.DRIVER, {
-        page,
-        limit,
-        search,
-        from_date,
-        to_date,
-      });
+      const res = await ApiService.get(APIURL.DRIVER, { page, limit, search, from_date, to_date });
 
-      if (!res?.success) {
-        return rejectWithValue(res?.message || "Failed to fetch drivers");
-      }
+      if (!res?.success) return rejectWithValue(res?.message || 'Failed to fetch drivers');
 
       const { drivers = [], pagination } = res.data;
       return { drivers, pagination };
     } catch (err) {
-      return rejectWithValue(err.message || "Network error");
+      return rejectWithValue(err.message || 'Network error');
     }
   }
 );
 
 // DELETE driver thunk
-export const deleteDriver = createAsyncThunk(
-  "driver/deleteDriver",
-  async (id, { rejectWithValue }) => {
-    try {
-      const res = await ApiService.delete(`${APIURL.DRIVER}/${id}`);
-      if (res.success) {
-        return res.message; // just return backend message
-      } else {
-        return rejectWithValue(res.message || "Failed to delete driver");
-      }
-    } catch (err) {
-      return rejectWithValue(err.message || "Network error");
+export const deleteDriver = createAsyncThunk('driver/deleteDriver', async (id, { rejectWithValue }) => {
+  try {
+    const res = await ApiService.delete(`${APIURL.DRIVER}/${id}`);
+    if (res.success) {
+      return res.message;
+    } else {
+      return rejectWithValue(res.message || 'Failed to delete driver');
     }
+  } catch (err) {
+    return rejectWithValue(err.message || 'Network error');
   }
-);
+});
 
 // Change driver status thunk
 export const changeDriverStatus = createAsyncThunk(
-  "driver/changeDriverStatus",
+  'driver/changeDriverStatus',
   async ({ id, newStatusId }, { rejectWithValue }) => {
     try {
-      const res = await ApiService.put(`${APIURL.DRIVER}/${id}`, {
-        status_id: newStatusId,
-      });
+      const res = await ApiService.put(`${APIURL.DRIVER}/${id}`, { status_id: newStatusId });
 
       if (res.success) {
-        return res.message || "Driver status updated successfully";
+        return res.message || 'Driver status updated successfully';
       } else {
-        return rejectWithValue(res.message || "Failed to update status");
+        return rejectWithValue(res.message || 'Failed to update status');
       }
     } catch (err) {
-      return rejectWithValue(err.message || "Network error");
+      return rejectWithValue(err.message || 'Network error');
     }
   }
 );
@@ -74,11 +58,9 @@ const initialState = {
 };
 
 const driverSlice = createSlice({
-  name: "driver",
+  name: 'driver',
   initialState,
-  reducers: {
-    resetDriverState: () => initialState,
-  },
+  reducers: { resetDriverState: () => initialState },
   extraReducers: (builder) => {
     builder
       .addCase(fetchDrivers.pending, (state) => {

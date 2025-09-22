@@ -1,15 +1,6 @@
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Autocomplete,
-  TextField,
-  Typography,
-  Checkbox,
-  Chip,
-} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useDropdown } from '../hooks/useDropdown';
+import { TextField, Typography, Checkbox, Chip } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Autocomplete } from '@mui/material';
 
 function FilterOption({
   handleExport,
@@ -33,25 +24,14 @@ function FilterOption({
   routes = [],
   plants = [],
 }) {
-  const company_id = localStorage.getItem('company_id');
-  const { employee } = useDropdown(company_id);
-
-  const { loading: employeeLoading, error: employeeError, refetch: employeeRefetch } = employee;
-
-  const departmentOptions = departments.map((dept) => ({
-    label: dept.department_name,
-    value: dept.department_name,
-  }));
+  const departmentOptions = departments.map((dept) => ({ label: dept.department_name, value: dept.department_name }));
 
   const busOptions = [{ label: 'Select All', value: 'SELECT_ALL' }, ...buses];
   const routeOptions = [{ label: 'Select All', value: 'SELECT_ALL' }, ...routes];
 
   const plantOptions = [
     { label: 'Select All', value: 'SELECT_ALL' },
-    ...plants.map((p) => ({
-      label: p.plant_name,
-      value: p.id,
-    })),
+    ...plants.map((p) => ({ label: p.plant_name, value: p.id })),
   ];
 
   const handlePlantChange = (event, newValue) => {
@@ -60,35 +40,24 @@ function FilterOption({
 
     if (isSelectAllSelected) {
       if (filterData.plants?.length === plants.length) {
-        // Deselect all
         setFilterData({ ...filterData, plants: [] });
       } else {
-        // Select all
         setFilterData({ ...filterData, plants: allPlantValues });
       }
     } else {
       const filtered = newValue.filter((opt) => opt.value !== 'SELECT_ALL');
-      setFilterData({
-        ...filterData,
-        plants: filtered.map((p) => p.value),
-      });
+      setFilterData({ ...filterData, plants: filtered.map((p) => p.value) });
     }
   };
   const getPlantDisplayValue = () => {
     if (!filterData.plants || filterData.plants.length === 0) return [];
-
-    if (filterData.plants.length === plants.length) {
-      return [{ label: 'Select All', value: 'SELECT_ALL' }];
-    }
+    if (filterData.plants.length === plants.length) return [{ label: 'Select All', value: 'SELECT_ALL' }];
 
     return plantOptions.filter((p) => p.value !== 'SELECT_ALL' && filterData.plants.includes(p.value));
   };
 
   const handleChange = (event) => {
-    setFilterData({
-      ...filterData,
-      [event.target.name]: event.target.value,
-    });
+    setFilterData({ ...filterData, [event.target.name]: event.target.value });
   };
   const handleRouteChange = (event, newValue) => {
     const isSelectAllSelected = newValue.some((opt) => opt.value === 'SELECT_ALL');
@@ -96,18 +65,13 @@ function FilterOption({
 
     if (isSelectAllSelected) {
       if (filterData.route?.length === routes.length) {
-        // Deselect all
         setFilterData({ ...filterData, route: [] });
       } else {
-        // Select all
         setFilterData({ ...filterData, route: allRouteValues });
       }
     } else {
       const filtered = newValue.filter((opt) => opt.value !== 'SELECT_ALL');
-      setFilterData({
-        ...filterData,
-        route: filtered.map((r) => r.value),
-      });
+      setFilterData({ ...filterData, route: filtered.map((r) => r.value) });
     }
   };
 
@@ -117,74 +81,31 @@ function FilterOption({
 
     if (isSelectAllSelected) {
       if (filterData.bus.length === buses.length) {
-        // Deselect all
         setFilterData({ ...filterData, bus: [] });
       } else {
-        // Select all
         setFilterData({ ...filterData, bus: allBusValues });
       }
     } else {
       const filtered = newValue.filter((opt) => opt.value !== 'SELECT_ALL');
-      setFilterData({
-        ...filterData,
-        bus: filtered.map((b) => b.value),
-      });
+      setFilterData({ ...filterData, bus: filtered.map((b) => b.value) });
     }
   };
 
   const getRouteDisplayValue = () => {
     if (!filterData.route || filterData.route.length === 0) return [];
-
-    if (filterData.route.length === routes.length) {
-      return [{ label: 'Select All', value: 'SELECT_ALL' }];
-    }
+    if (filterData.route.length === routes.length) return [{ label: 'Select All', value: 'SELECT_ALL' }];
 
     return routes.filter((r) => filterData.route.includes(r.value));
   };
 
   const getBusDisplayValue = () => {
     if (!filterData.bus || filterData.bus.length === 0) return [];
-
-    if (filterData.bus.length === buses.length) {
-      return [{ label: 'Select All', value: 'SELECT_ALL' }];
-    }
+    if (filterData.bus.length === buses.length) return [{ label: 'Select All', value: 'SELECT_ALL' }];
 
     return buses.filter((b) => filterData.bus.includes(b.value));
   };
 
   const busRouteNoOptions = [{ label: 'Select All', value: 'SELECT_ALL' }, ...busRouteNo];
-
-  // const onChangeEmp = (event, newValue, reason) => {
-  //   const isSelectAllSelected = newValue.some(
-  //     (opt) => opt.value === "SELECT_ALL"
-  //   );
-  //   const allEmployeeValues = employees.map((e) => e.value);
-
-  //   if (isSelectAllSelected && newValue.length === 1) {
-  //     // Only "Select All" selected → select all employees
-  //     setFilterData({ ...filterData, employee: allEmployeeValues });
-  //     return;
-  //   }
-
-  //   if (filterData.employee?.length === employees.length) {
-  //     // Previously all selected, user is unchecking one
-  //     const removed = employees.find(
-  //       (emp) => !newValue.some((nv) => nv.value === emp.value)
-  //     );
-  //     if (removed) {
-  //       const updated = allEmployeeValues.filter((id) => id !== removed.value);
-  //       setFilterData({ ...filterData, employee: updated });
-  //       return;
-  //     }
-  //   }
-
-  //   // General case
-  //   const filtered = newValue.filter((opt) => opt.value !== "SELECT_ALL");
-  //   setFilterData({
-  //     ...filterData,
-  //     employee: filtered.map((e) => e.value),
-  //   });
-  // };
 
   const onChangeEmp = (event, newValue, reason) => {
     const isSelectAllSelected = newValue.some((opt) => opt.value === 'SELECT_ALL');
@@ -192,19 +113,16 @@ function FilterOption({
     const allEmployeeValues = employees.map((e) => e.value);
 
     if (reason === 'removeOption' && filterData.employee?.length === employees.length) {
-      // User removed "All Employees Selected" chip → reset selection
       setFilterData({ ...filterData, employee: [] });
       return;
     }
 
     if (isSelectAllSelected && newValue.length === 1) {
-      // Only "Select All" selected → select all employees
       setFilterData({ ...filterData, employee: allEmployeeValues });
       return;
     }
 
     if (filterData.employee?.length === employees.length) {
-      // Previously all selected, user is unchecking one
       const removed = employees.find((emp) => !newValue.some((nv) => nv.value === emp.value));
       if (removed) {
         const updated = allEmployeeValues.filter((id) => id !== removed.value);
@@ -213,12 +131,8 @@ function FilterOption({
       }
     }
 
-    // General case
     const filtered = newValue.filter((opt) => opt.value !== 'SELECT_ALL');
-    setFilterData({
-      ...filterData,
-      employee: filtered.map((e) => e.value),
-    });
+    setFilterData({ ...filterData, employee: filtered.map((e) => e.value) });
   };
 
   const renderEmp = (value, getTagProps) => {
@@ -254,27 +168,19 @@ function FilterOption({
 
     if (isSelectAllSelected) {
       if (filterData.busRouteNo?.length === busRouteNo.length) {
-        // Deselect all
         setFilterData({ ...filterData, busRouteNo: [] });
       } else {
-        // Select all
         setFilterData({ ...filterData, busRouteNo: allBusRouteNoValues });
       }
     } else {
       const filtered = newValue.filter((opt) => opt.value !== 'SELECT_ALL');
-      setFilterData({
-        ...filterData,
-        busRouteNo: filtered.map((b) => b.value),
-      });
+      setFilterData({ ...filterData, busRouteNo: filtered.map((b) => b.value) });
     }
   };
 
   const getBusRouteNoDisplayValue = () => {
     if (!filterData.busRouteNo || filterData.busRouteNo.length === 0) return [];
-
-    if (filterData.busRouteNo.length === busRouteNo.length) {
-      return [{ label: 'Select All', value: 'SELECT_ALL' }];
-    }
+    if (filterData.busRouteNo.length === busRouteNo.length) return [{ label: 'Select All', value: 'SELECT_ALL' }];
 
     return busRouteNo.filter((b) => filterData.busRouteNo.includes(b.value));
   };
@@ -286,28 +192,22 @@ function FilterOption({
     const allDepartmentValues = departmentOptions.map((d) => d.value);
 
     if (isSelectAllSelected) {
-      // If "Select All" is clicked, toggle select/deselect all
       if (filterData.department?.length === departmentOptions.length) {
         setFilterData({ ...filterData, department: [] });
       } else {
         setFilterData({ ...filterData, department: allDepartmentValues });
       }
     } else {
-      // ✅ FIX: Always update based on actual selected options (cross click works now)
       const filtered = newValue.filter((opt) => opt.value !== 'SELECT_ALL');
-      setFilterData({
-        ...filterData,
-        department: filtered.map((d) => d.value),
-      });
+      setFilterData({ ...filterData, department: filtered.map((d) => d.value) });
     }
   };
 
   const getDepartmentDisplayValue = () => {
     if (!filterData.department || filterData.department.length === 0) return [];
 
-    if (filterData.department.length === departmentOptions.length) {
+    if (filterData.department.length === departmentOptions.length)
       return [{ label: 'Select All', value: 'SELECT_ALL' }];
-    }
 
     return departmentOptions.filter((d) => filterData.department.includes(d.value));
   };
@@ -332,16 +232,9 @@ function FilterOption({
                 isOptionEqualToValue={(option, value) => option.value === value.value}
                 getOptionLabel={(option) => option.label}
                 onChange={onChangeEmp}
-                // value={
-                //   filterData.employee?.length === employees.length
-                //     ? [{ label: "Select All", value: "SELECT_ALL" }]
-                //     : employees.filter((e) =>
-                //         filterData.employee.includes(e.value)
-                //       )
-                // }
                 value={employees.filter((e) => filterData.employee.includes(e.value))}
                 renderTags={renderEmp}
-                renderOption={(props, option, { selected }) => (
+                renderOption={(props, option) => (
                   <li {...props} key={option.value}>
                     <Checkbox
                       style={{ marginRight: 8 }}
@@ -369,7 +262,7 @@ function FilterOption({
                 getOptionLabel={(option) => option.label}
                 onChange={handlePlantChange}
                 value={getPlantDisplayValue()}
-                renderOption={(props, option, { selected }) => (
+                renderOption={(props, option) => (
                   <li {...props}>
                     <Checkbox
                       style={{ marginRight: 8 }}
@@ -398,7 +291,7 @@ function FilterOption({
                 getOptionLabel={(option) => option.label}
                 onChange={handleRouteChange}
                 value={getRouteDisplayValue()}
-                renderOption={(props, option, { selected }) => (
+                renderOption={(props, option) => (
                   <li {...props}>
                     <Checkbox
                       style={{ marginRight: 8 }}
@@ -424,10 +317,7 @@ function FilterOption({
                 isOptionEqualToValue={(option, value) => option.value === value}
                 getOptionLabel={(option) => option.label}
                 onChange={(event, newValue) => {
-                  setFilterData({
-                    ...filterData,
-                    busRoute: newValue ? newValue.value : '',
-                  });
+                  setFilterData({ ...filterData, busRoute: newValue ? newValue.value : '' });
                 }}
                 value={busRoutes.find((opt) => opt.value === filterData.busRoute) || null}
               />
@@ -446,7 +336,7 @@ function FilterOption({
                 getOptionLabel={(option) => option.label}
                 onChange={handleBusChange}
                 value={getBusDisplayValue()}
-                renderOption={(props, option, { selected }) => (
+                renderOption={(props, option) => (
                   <li {...props}>
                     <Checkbox
                       style={{ marginRight: 8 }}
@@ -472,10 +362,7 @@ function FilterOption({
                 isOptionEqualToValue={(option, value) => option.value === value}
                 getOptionLabel={(option) => option.label}
                 onChange={(event, newValue) => {
-                  setFilterData({
-                    ...filterData,
-                    interval: newValue ? newValue.value : '',
-                  });
+                  setFilterData({ ...filterData, interval: newValue ? newValue.value : '' });
                 }}
                 value={interValOptions.find((opt) => opt.value === filterData.interval) || null}
               />
@@ -491,10 +378,7 @@ function FilterOption({
                 isOptionEqualToValue={(option, value) => option.value === value}
                 getOptionLabel={(option) => option.label}
                 onChange={(event, newValue) => {
-                  setFilterData({
-                    ...filterData,
-                    geofenceType: newValue ? newValue.value : '',
-                  });
+                  setFilterData({ ...filterData, geofenceType: newValue ? newValue.value : '' });
                 }}
                 value={geofenceTypes.find((opt) => opt.value === filterData.geofenceType) || null}
               />
@@ -511,10 +395,7 @@ function FilterOption({
                   isOptionEqualToValue={(option, value) => option.value === value}
                   getOptionLabel={(option) => option.label}
                   onChange={(event, newValue) => {
-                    setFilterData({
-                      ...filterData,
-                      startGeoFence: newValue ? newValue.value : '',
-                    });
+                    setFilterData({ ...filterData, startGeoFence: newValue ? newValue.value : '' });
                   }}
                   value={startGeoFence.find((opt) => opt.value === filterData.startGeoFence) || null}
                 />
@@ -531,10 +412,7 @@ function FilterOption({
                   isOptionEqualToValue={(option, value) => option.value === value}
                   getOptionLabel={(option) => option.label}
                   onChange={(event, newValue) => {
-                    setFilterData({
-                      ...filterData,
-                      endGeoFence: newValue ? newValue.value : '',
-                    });
+                    setFilterData({ ...filterData, endGeoFence: newValue ? newValue.value : '' });
                   }}
                   value={endGeoFence.find((opt) => opt.value === filterData.endGeoFence) || null}
                 />
@@ -554,7 +432,7 @@ function FilterOption({
                 getOptionLabel={(option) => option.label}
                 onChange={handleBusRouteNoChange}
                 value={getBusRouteNoDisplayValue()}
-                renderOption={(props, option, { selected }) => (
+                renderOption={(props, option) => (
                   <li {...props}>
                     <Checkbox
                       style={{ marginRight: 8 }}
@@ -621,7 +499,7 @@ function FilterOption({
                 getOptionLabel={(option) => option.label}
                 onChange={handleDepartmentChange}
                 value={getDepartmentDisplayValue()}
-                renderOption={(props, option, { selected }) => (
+                renderOption={(props, option) => (
                   <li {...props}>
                     <Checkbox
                       style={{ marginRight: 8 }}
@@ -650,7 +528,6 @@ function FilterOption({
               />
             )}
 
-            {/* Action buttons */}
             <div className='flex gap-2.5'>
               <button
                 type='submit'

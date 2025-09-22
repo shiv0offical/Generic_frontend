@@ -1,9 +1,9 @@
-import { Autocomplete, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ApiService } from "../../../../services";
-import { APIURL } from "../../../../constants";
-import { useDropdownOpt } from "../../../../hooks/useDropdownOpt";
+import { useEffect, useState } from 'react';
+import { APIURL } from '../../../../constants';
+import { ApiService } from '../../../../services';
+import { Autocomplete, TextField } from '@mui/material';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDropdownOpt } from '../../../../hooks/useDropdownOpt';
 
 function PlantInTimeForm() {
   const location = useLocation();
@@ -12,23 +12,23 @@ function PlantInTimeForm() {
   const navigate = useNavigate();
 
   const [formValues, setFormValues] = useState({
-    bus: "",
-    busRoute: "",
-    dayGenStartTime: "",
-    dayGenEndTime: "",
-    nightGenStartTime: "",
-    nightGenEndTime: "",
-    firstShiftStartTime: "",
-    firstShiftEndTime: "",
-    secondShiftStartTime: "",
-    secondShiftEndTime: "",
-    thirdShiftStartTime: "",
-    thirdShiftEndTime: "",
+    bus: '',
+    busRoute: '',
+    dayGenStartTime: '',
+    dayGenEndTime: '',
+    nightGenStartTime: '',
+    nightGenEndTime: '',
+    firstShiftStartTime: '',
+    firstShiftEndTime: '',
+    secondShiftStartTime: '',
+    secondShiftEndTime: '',
+    thirdShiftStartTime: '',
+    thirdShiftEndTime: '',
   });
 
   const [plantData, setPlantData] = useState([]);
 
-  const companyId = localStorage.getItem("company_id");
+  const companyId = localStorage.getItem('company_id');
 
   const {
     options: buses,
@@ -54,35 +54,20 @@ function PlantInTimeForm() {
     valueSelector: (d) => d.id,
   });
 
-  // const busRoutes = Array.from(
-  //   new Map(
-  //     plantData.map((item) => [
-  //       item.route_id,
-  //       { label: item.vehicle_route.name, value: item.vehicle_route_id },
-  //     ])
-  //   ).values()
-  // );
-
   const getvehicleData = async () => {
     try {
-      const res = await ApiService.get(APIURL.PLANTINTIME, {
-        company_id: companyId,
-      });
-      console.log("🚀 ~ PlantInTimeForm.jsx:38 ~ getvehicleData ~ res:", res);
+      const res = await ApiService.get(APIURL.PLANTINTIME, { company_id: companyId });
 
       if (res.success) {
         setPlantData(res.data);
       } else {
-        console.error(
-          "Failed to fetch employee data:",
-          res.message || "Unknown error"
-        );
+        console.error('Failed to fetch employee data:', res.message || 'Unknown error');
 
-        alert(res.message || "Failed to fetch employee data");
+        alert(res.message || 'Failed to fetch employee data');
       }
     } catch (error) {
-      console.error("API call failed:", error.message || error);
-      alert("Something went wrong while fetching Plant in Time data");
+      console.error('API call failed:', error.message || error);
+      alert('Something went wrong while fetching Plant in Time data');
     }
   };
 
@@ -94,15 +79,15 @@ function PlantInTimeForm() {
         bus: rowData.vehicle_id,
         busRoute: rowData.route_id,
         dayGenStartTime: rowData.dayGeneral,
-        dayGenEndTime: "",
+        dayGenEndTime: '',
         nightGenStartTime: rowData.nightGeneral,
-        nightGenEndTime: "",
+        nightGenEndTime: '',
         firstShiftStartTime: rowData.firstGeneral,
-        firstShiftEndTime: "",
+        firstShiftEndTime: '',
         secondShiftStartTime: rowData.secondGeneral,
-        secondShiftEndTime: "",
+        secondShiftEndTime: '',
         thirdShiftStartTime: rowData.thirdGeneral,
-        thirdShiftEndTime: "",
+        thirdShiftEndTime: '',
       });
     }
   }, []);
@@ -126,37 +111,28 @@ function PlantInTimeForm() {
     };
     if (rowData) {
       // Edit logic here
-      console.log("edit", formValues, rowData, payload);
+      console.log('edit', formValues, rowData, payload);
 
-      const res = await ApiService.put(
-        `${APIURL.PLANTINTIME}/${rowData.plantId}`,
-        payload
-      );
+      const res = await ApiService.put(`${APIURL.PLANTINTIME}/${rowData.plantId}`, payload);
 
       if (res.success) {
-        console.log(
-          "🚀 ~ PlantInTimeForm.jsx:99 ~ handleFormSubmit ~ res:",
-          res
-        );
-        navigate("/master/factory-in-time-target");
+        console.log('🚀 ~ PlantInTimeForm.jsx:99 ~ handleFormSubmit ~ res:', res);
+        navigate('/master/factory-in-time-target');
       } else {
-        alert(res.message || "Something went wrong.");
+        alert(res.message || 'Something went wrong.');
         console.error(response.message);
       }
     } else {
       // Create logic here
-      console.log("create", formValues);
+      console.log('create', formValues);
 
       const res = await ApiService.post(APIURL.PLANTINTIME, payload);
 
       if (res.success) {
-        console.log(
-          "🚀 ~ PlantInTimeForm.jsx:99 ~ handleFormSubmit ~ res:",
-          res
-        );
-        navigate("/master/factory-in-time-target");
+        console.log('🚀 ~ PlantInTimeForm.jsx:99 ~ handleFormSubmit ~ res:', res);
+        navigate('/master/factory-in-time-target');
       } else {
-        alert(res.message || "Something went wrong.");
+        alert(res.message || 'Something went wrong.');
         console.error(response.message);
       }
     }
@@ -172,52 +148,42 @@ function PlantInTimeForm() {
 
   return (
     <>
-      <div className="bg-white rounded-sm border-t-3 border-b-3 border-[#07163d]">
-        <h1 className="text-2xl font-bold p-3 text-[#07163d]">
-          Create Factory In-Time Target
-        </h1>
-        <p className="mx-3 mb-2">
-          <span className="text-red-500">*</span> indicates required field
+      <div className='bg-white rounded-sm border-t-3 border-b-3 border-[#07163d]'>
+        <h1 className='text-2xl font-bold p-3 text-[#07163d]'>Create Factory In-Time Target</h1>
+        <p className='mx-3 mb-2'>
+          <span className='text-red-500'>*</span> indicates required field
         </p>
-        <hr className="border border-gray-300" />
-        <div className="p-5">
+        <hr className='border border-gray-300' />
+        <div className='p-5'>
           <form onSubmit={handleFormSubmit}>
-            <div className="grid lg:grid-cols-2 md:grid-cols-2 sm:grid-cols-1  gap-4">
+            <div className='grid lg:grid-cols-2 md:grid-cols-2 sm:grid-cols-1  gap-4'>
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Select Bus <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Select Bus <span className='text-red-500'>*</span>
                 </label>
                 <Autocomplete
                   disablePortal
                   loading={busesLoading}
                   options={buses}
-                  isOptionEqualToValue={(option, value) =>
-                    option.value === value
-                  }
+                  isOptionEqualToValue={(option, value) => option.value === value}
                   getOptionLabel={(option) => option.label}
-                  size="small"
+                  size='small'
                   onChange={(event, newValue) => {
                     setFormValues({
                       ...formValues,
-                      bus: newValue ? newValue.value : "",
+                      bus: newValue ? newValue.value : '',
                     });
                   }}
-                  value={
-                    buses.find((opt) => opt.value === formValues.department) ||
-                    null
-                  }
-                  renderInput={(params) => (
-                    <TextField {...params} label="Select Bus" />
-                  )}
+                  value={buses.find((opt) => opt.value === formValues.department) || null}
+                  renderInput={(params) => <TextField {...params} label='Select Bus' />}
                 />
 
                 {busesError && (
-                  <p className="text-red-500 text-sm mt-1">
-                    Failed to load Vehicle Name.{" "}
+                  <p className='text-red-500 text-sm mt-1'>
+                    Failed to load Vehicle Name.{' '}
                     <button
                       onClick={busesRefetch}
-                      className="text-blue-600 underline hover:text-blue-800 transition-colors duration-200"
-                    >
+                      className='text-blue-600 underline hover:text-blue-800 transition-colors duration-200'>
                       Retry
                     </button>
                   </p>
@@ -225,55 +191,46 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Select Bus Route <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Select Bus Route <span className='text-red-500'>*</span>
                 </label>
                 <Autocomplete
                   disablePortal
                   loading={routeLoading}
                   options={busRoutes}
-                  isOptionEqualToValue={(option, value) =>
-                    option.value === value
-                  }
+                  isOptionEqualToValue={(option, value) => option.value === value}
                   getOptionLabel={(option) => option.label}
-                  size="small"
+                  size='small'
                   onChange={(event, newValue) => {
                     setFormValues({
                       ...formValues,
-                      busRoute: newValue ? newValue.value : "",
+                      busRoute: newValue ? newValue.value : '',
                     });
                   }}
-                  value={
-                    busRoutes.find(
-                      (opt) => opt.value === formValues.busRoute
-                    ) || null
-                  }
-                  renderInput={(params) => (
-                    <TextField {...params} label="Select Bus Route" />
-                  )}
+                  value={busRoutes.find((opt) => opt.value === formValues.busRoute) || null}
+                  renderInput={(params) => <TextField {...params} label='Select Bus Route' />}
                 />
 
                 {routeError && (
-                  <p className="text-red-500 text-sm mt-1">
-                    Failed to load Routes.{" "}
+                  <p className='text-red-500 text-sm mt-1'>
+                    Failed to load Routes.{' '}
                     <button
                       onClick={routeRefetch}
-                      className="text-blue-600 underline hover:text-blue-800 transition-colors duration-200"
-                    >
+                      className='text-blue-600 underline hover:text-blue-800 transition-colors duration-200'>
                       Retry
                     </button>
                   </p>
                 )}
               </div>
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Day General Start time <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Day General Start time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="dayGenStartTime"
-                  id="dayGenStartTime"
+                  size='small'
+                  type='time'
+                  name='dayGenStartTime'
+                  id='dayGenStartTime'
                   fullWidth
                   required
                   value={formValues.dayGenStartTime}
@@ -282,14 +239,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Day General End Time <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Day General End Time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="dayGenEndTime"
-                  id="dayGenEndTime"
+                  size='small'
+                  type='time'
+                  name='dayGenEndTime'
+                  id='dayGenEndTime'
                   fullWidth
                   required
                   value={formValues.dayGenEndTime}
@@ -298,15 +255,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Night General Start time{" "}
-                  <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Night General Start time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="nightGenStartTime"
-                  id="nightGenStartTime"
+                  size='small'
+                  type='time'
+                  name='nightGenStartTime'
+                  id='nightGenStartTime'
                   fullWidth
                   required
                   value={formValues.nightGenStartTime}
@@ -315,14 +271,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Night General End Time <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Night General End Time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="nightGenEndTime"
-                  id="nightGenEndTime"
+                  size='small'
+                  type='time'
+                  name='nightGenEndTime'
+                  id='nightGenEndTime'
                   fullWidth
                   required
                   value={formValues.nightGenEndTime}
@@ -331,14 +287,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  First Shift Start time <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  First Shift Start time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="firstShiftStartTime"
-                  id="firstShiftStartTime"
+                  size='small'
+                  type='time'
+                  name='firstShiftStartTime'
+                  id='firstShiftStartTime'
                   fullWidth
                   required
                   value={formValues.firstShiftStartTime}
@@ -347,14 +303,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  First Shift End Time <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  First Shift End Time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="firstShiftEndTime"
-                  id="firstShiftEndTime"
+                  size='small'
+                  type='time'
+                  name='firstShiftEndTime'
+                  id='firstShiftEndTime'
                   fullWidth
                   required
                   value={formValues.firstShiftEndTime}
@@ -363,15 +319,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Second Shift Start time{" "}
-                  <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Second Shift Start time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="secondShiftStartTime"
-                  id="secondShiftStartTime"
+                  size='small'
+                  type='time'
+                  name='secondShiftStartTime'
+                  id='secondShiftStartTime'
                   fullWidth
                   required
                   value={formValues.secondShiftStartTime}
@@ -380,14 +335,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Second Shift End Time <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Second Shift End Time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="secondShiftEndTime"
-                  id="secondShiftEndTime"
+                  size='small'
+                  type='time'
+                  name='secondShiftEndTime'
+                  id='secondShiftEndTime'
                   fullWidth
                   required
                   value={formValues.secondShiftEndTime}
@@ -396,14 +351,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Third Shift Start time <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Third Shift Start time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="thirdShiftStartTime"
-                  id="thirdShiftStartTime"
+                  size='small'
+                  type='time'
+                  name='thirdShiftStartTime'
+                  id='thirdShiftStartTime'
                   fullWidth
                   required
                   value={formValues.thirdShiftStartTime}
@@ -412,14 +367,14 @@ function PlantInTimeForm() {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Third Shift End Time <span className="text-red-500">*</span>
+                <label className='block mb-2 text-sm font-medium text-gray-900'>
+                  Third Shift End Time <span className='text-red-500'>*</span>
                 </label>
                 <TextField
-                  size="small"
-                  type="time"
-                  name="thirdShiftEndTime"
-                  id="thirdShiftEndTime"
+                  size='small'
+                  type='time'
+                  name='thirdShiftEndTime'
+                  id='thirdShiftEndTime'
                   fullWidth
                   required
                   value={formValues.thirdShiftEndTime}
@@ -427,18 +382,16 @@ function PlantInTimeForm() {
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-4 mt-4">
+            <div className='flex justify-end gap-4 mt-4'>
               <button
-                type="submit"
-                className="text-white bg-[#07163d] hover:bg-[#07163d]/90 focus:ring-4 focus:outline-none focus:ring-[#07163d]/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer"
-              >
+                type='submit'
+                className='text-white bg-[#07163d] hover:bg-[#07163d]/90 focus:ring-4 focus:outline-none focus:ring-[#07163d]/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
                 Save
               </button>
-              <Link to="/master/factory-in-time-target">
+              <Link to='/master/factory-in-time-target'>
                 <button
-                  type="button"
-                  className="text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer"
-                >
+                  type='button'
+                  className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
                   Back
                 </button>
               </Link>

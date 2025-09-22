@@ -1,9 +1,9 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = { previousData: [], currentData: [], days: [] };
 
 const lateArrivalStatusSlice = createSlice({
-  name: "lateArrivalStatus",
+  name: 'lateArrivalStatus',
   initialState,
   reducers: {
     setPreviousData(state, action) {
@@ -20,6 +20,5 @@ const lateArrivalStatusSlice = createSlice({
   },
 });
 
-export const { setPreviousData, setCurrentData, setDays } =
-  lateArrivalStatusSlice.actions;
+export const { setPreviousData, setCurrentData, setDays } = lateArrivalStatusSlice.actions;
 export default lateArrivalStatusSlice.reducer;

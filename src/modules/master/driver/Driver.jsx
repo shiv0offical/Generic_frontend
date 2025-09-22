@@ -10,9 +10,9 @@ import IModal from '../../../components/modal/Modal';
 import FilterOptions from './components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
-import { changeDriverStatus, deleteDriver, fetchDrivers } from '../../../redux/driverSlice';
 import { CircularProgress, Table, TableBody, TableCell, TableRow } from '@mui/material';
 import { TableContainer, TableHead, TablePagination, TableSortLabel } from '@mui/material';
+import { changeDriverStatus, deleteDriver, fetchDrivers } from '../../../redux/driverSlice';
 
 const columns = [
   { key: 'id', header: 'Sr No' },

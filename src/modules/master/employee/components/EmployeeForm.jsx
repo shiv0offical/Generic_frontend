@@ -97,11 +97,16 @@ function EmployeeForm() {
     if (rowData && (rowData.mode === 'edit' || rowData.mode === 'view')) {
       const data = rowData.rowData;
       const [firstName = '', lastName = ''] = data.employeeName?.split(' ') || [];
+
       const selectedAddress = data.address
         ? {
             label: data.address,
-            value: `${data.latitude}-${data.longitude}`,
-            otherData: { display_name: data.address, lat: data.latitude, lon: data.longitude },
+            value: `${data.boarding_latitude}-${data.boarding_longitude}`,
+            otherData: {
+              display_name: data.address,
+              lat: data.boarding_latitude,
+              lon: data.boarding_longitude,
+            },
           }
         : null;
 
@@ -109,21 +114,22 @@ function EmployeeForm() {
         firstName,
         lastName,
         employeeId: data.employee_id || '',
-        punchId: data.punchId || '',
+        punchId: data.punch_id || '',
         email: data.email || '',
-        phoneNumber: data.mobileNumber || '',
+        phoneNumber: data.phone_number || '',
         selectedDepartment: data.departmentId || '',
         selectedPlant: data.plantId || '',
         dateOfJoining: data.doj || '',
         dateOfBirth: data.dob || '',
         selectedGender: data.gender === 'Male' ? '2' : data.gender === 'Female' ? '1' : '',
-        vehicleRoute: data.routeId || '',
-        boardingPoint: data?.boardingPoint,
+        vehicleRoute: data.vehicle_route_id || '',
+        boardingPoint: data.boarding_address || '',
         profilePhoto: null,
         address: data.address || '',
-        latitude: data.latitude || '',
-        longitude: data.longitude || '',
+        latitude: data.boarding_latitude || '',
+        longitude: data.boarding_longitude || '',
       });
+
       setSelectedAddressOption(selectedAddress);
     }
   }, [rowData]);
@@ -215,6 +221,10 @@ function EmployeeForm() {
     if (typeof formVal.profilePhoto === 'string') return formVal.profilePhoto;
     return URL.createObjectURL(formVal.profilePhoto);
   }, [formVal.profilePhoto]);
+
+  const addressOptions = Array.isArray(addressOnSearch)
+    ? addressOnSearch.map((item) => ({ label: item.display_name, value: item.place_id, otherData: item }))
+    : [];
 
   return (
     <div className='w-full h-full p-2'>
@@ -551,11 +561,7 @@ function EmployeeForm() {
                   <label className='block mb-2 text-sm font-medium text-gray-900'>Address</label>
                   <Autocomplete
                     disablePortal
-                    options={addressOnSearch.map((item) => ({
-                      label: item.display_name,
-                      value: item.place_id,
-                      otherData: item,
-                    }))}
+                    options={addressOptions}
                     isOptionEqualToValue={(option, value) => option?.value === value?.value}
                     getOptionLabel={(option) => option.label}
                     size='small'

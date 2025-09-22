@@ -1,17 +1,16 @@
-import { Link, useNavigate } from 'react-router-dom';
-import logo from '../../assets/logo.png';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
-import PersonIcon from '@mui/icons-material/Person';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import SettingsIcon from '@mui/icons-material/Settings';
 import './Sidebar.css';
-import { ArrowRight } from '@mui/icons-material';
-import ProfileIcon from './components/ProfileIcon';
-import NotificationPanel from './components/NotificationPanel';
+import logo from '../../assets/logo.png';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../redux/authSlice';
+import { ArrowRight } from '@mui/icons-material';
+import PersonIcon from '@mui/icons-material/Person';
+import { Link, useNavigate } from 'react-router-dom';
+import SettingsIcon from '@mui/icons-material/Settings';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import NotificationPanel from './components/NotificationPanel';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 
 function Sidebar() {
   return (
@@ -20,7 +19,6 @@ function Sidebar() {
         <div className='w-[90%] p-4 rounded-3xl overflow-hidden'>
           <img src={logo} alt='samsung logo' className='object-contain rounded-xl' />
         </div>
-        {/* profile menu */}
         <div className='flex flex-col justify-between responsive-height'>
           <ul>
             <li className='sidebar-item hoverable'>
@@ -63,7 +61,6 @@ function Sidebar() {
             </li>
           </ul>
 
-          {/* <div className="flex gap-1 mt-4 mb-3 "> */}
           <ul>
             <li className='sidebar-item hoverable'>
               <div className='nav-link'>
@@ -84,7 +81,6 @@ function Sidebar() {
               <NotificationPanel />
             </li>
           </ul>
-          {/* </div> */}
         </div>
       </div>
     </>
@@ -248,11 +244,6 @@ const SettingsSubMenu = () => {
                 Driver
               </Link>
             </li>
-            {/* <li>
-              <Link to="/master/user-permission" className="nav-link">
-                User Permission
-              </Link>
-            </li> */}
             <li>
               <Link to='/master/departments' className='nav-link'>
                 Departments

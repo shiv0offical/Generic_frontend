@@ -1,5 +1,5 @@
-import { createSlice } from "@reduxjs/toolkit";
-import { processVehicles } from "../utils/vehicleStatus";
+import { createSlice } from '@reduxjs/toolkit';
+import { processVehicles } from '../utils/vehicleStatus';
 
 const initialState = {
   devices: [],
@@ -7,13 +7,13 @@ const initialState = {
   parkedDevices: [],
   idelDevices: [],
   offlineVehicleData: [],
-  activeTab: "All",
+  activeTab: 'All',
   isTrackShow: false,
   isProcessed: false,
 };
 
 const multiTrackStatuSlice = createSlice({
-  name: "multiTrackStatus",
+  name: 'multiTrackStatus',
   initialState,
   reducers: {
     setDevices(state, action) {

@@ -59,7 +59,7 @@ function Announcement() {
         setAnnouncements([]);
         setTotalCount(0);
       }
-    } catch (error) {
+    } catch (err) {
       setAnnouncements([]);
       setTotalCount(0);
     } finally {

@@ -1,6 +1,6 @@
-import { Accordion, AccordionDetails, AccordionSummary, TextField, Typography } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Link } from 'react-router-dom';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Accordion, AccordionDetails, AccordionSummary, TextField, Typography } from '@mui/material';
 
 function FilterOption({
   handleClickFilter,

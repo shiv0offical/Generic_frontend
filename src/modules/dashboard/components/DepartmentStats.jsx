@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import refrigeratorIcon from '../../../assets/refrigerator.png';
-import washigMachineIcon from '../../../assets/washing_machine.png';
-import airConditionerIcon from '../../../assets/air_conditioner.png';
-import VisualDisplayIcon from '../../../assets/visual_display.png';
-import computerIcon from '../../../assets/computer.png';
-import supportIcon from '../../../assets/support.png';
 import { APIURL } from '../../../constants';
 import { ApiService } from '../../../services';
+import supportIcon from '../../../assets/support.png';
+import computerIcon from '../../../assets/computer.png';
+import refrigeratorIcon from '../../../assets/refrigerator.png';
+import VisualDisplayIcon from '../../../assets/visual_display.png';
+import washigMachineIcon from '../../../assets/washing_machine.png';
+import airConditionerIcon from '../../../assets/air_conditioner.png';
 
 const icons = {
   'r&dgroup': refrigeratorIcon,
@@ -25,18 +25,13 @@ function DepartmentStats() {
   const fetchDepartmentData = async () => {
     let params = {};
 
-    // only add company_id if path is dashboard
     if (window.location.pathname.startsWith('/dashboard')) {
       const company_id = localStorage.getItem('company_id');
-      if (company_id) {
-        params.company_id = company_id;
-      }
+      if (company_id) params.company_id = company_id;
     }
 
     const departmentRes = await ApiService.get(APIURL.DEPARTMENTANALYTICS, params);
-    if (departmentRes?.success) {
-      setDepartments(departmentRes.data);
-    }
+    if (departmentRes?.success) setDepartments(departmentRes.data);
   };
 
   useEffect(() => {

@@ -6,9 +6,7 @@ export const createEmployee = createAsyncThunk('employee/createEmployee', async 
   try {
     const response = await ApiService.post('employee', formData);
 
-    if (!response.success) {
-      return rejectWithValue(response.message || 'Failed to create employee');
-    }
+    if (!response.success) return rejectWithValue(response.message || 'Failed to create employee');
 
     return response.data;
   } catch (error) {
@@ -23,9 +21,7 @@ export const updateEmployee = createAsyncThunk(
     try {
       const response = await ApiService.put(`employee/${id}`, formData);
 
-      if (!response.success) {
-        return rejectWithValue(response.message || 'Failed to update employee');
-      }
+      if (!response.success) return rejectWithValue(response.message || 'Failed to update employee');
 
       return response.data;
     } catch (error) {
@@ -42,9 +38,7 @@ export const fetchEmployees = createAsyncThunk(
       const query = new URLSearchParams({ company_id }).toString();
       const response = await ApiService.get(`employee?${query}`);
 
-      if (!response.success) {
-        return rejectWithValue(response.message || 'Failed to fetch employees');
-      }
+      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch employees');
 
       return response.data;
     } catch (error) {
@@ -70,9 +64,7 @@ export const fetchEmployeeOnboard = createAsyncThunk(
 
       const response = await ApiService.get(`emponboard?${queryParams}`);
 
-      if (!response.success) {
-        return rejectWithValue(response.message || 'Failed to fetch onboard employees');
-      }
+      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch onboard employees');
 
       return response.data;
     } catch (error) {
@@ -86,9 +78,7 @@ export const fetchAllEmployeeDetails = createAsyncThunk(
   'employee/fetchAllEmployeeDetails',
   async ({ company_id }, { rejectWithValue }) => {
     try {
-      const response = await ApiService.get('employee', {
-        company_id,
-      });
+      const response = await ApiService.get('employee', { company_id });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
