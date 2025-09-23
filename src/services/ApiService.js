@@ -1,10 +1,7 @@
 import authMiddleware from '../redux/middleware/authMiddleware';
 
-const resolveBaseUrl = () => {
-  return window.location.pathname.startsWith('/dashboard')
-    ? import.meta.env.VITE_BASE_URL_OLD
-    : import.meta.env.VITE_BASE_URL;
-};
+const resolveBaseUrl = () =>
+  window.location.pathname.startsWith('/dashboard') ? import.meta.env.VITE_BASE_URL_OLD : import.meta.env.VITE_BASE_URL;
 
 const buildUrl = (baseUrl, params) => {
   const query = params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
@@ -19,8 +16,7 @@ const jsonHeaders = (token) => ({
 
 const fetchJson = async (url, options) => {
   const res = await fetch(url, options);
-  const contentType = res.headers.get('content-type');
-  if (!contentType?.includes('application/json')) {
+  if (!res.headers.get('content-type')?.includes('application/json')) {
     const text = await res.text();
     console.error('Non-JSON response received:', text.slice(0, 200));
     throw new Error(`Server returned non-JSON response. Status: ${res.status}`);
@@ -36,20 +32,22 @@ export default {
       body: JSON.stringify(data),
     }),
 
-  postFormData: async (url, formData, params = {}) =>
-    fetchJson(await buildUrl(url, params), {
+  postFormData: async (url, formData, params = {}) => {
+    const base = import.meta.env.VITE_UPLOAD_URL;
+    const query = params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
+    return fetchJson(base + url + query, {
       method: 'POST',
       headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
-    }),
+    });
+  },
 
   get: async (url, params = {}) => {
     const res = await fetch(await buildUrl(url, params), {
       method: 'GET',
       headers: { Authorization: `Bearer ${getToken()}` },
     });
-    const contentType = res.headers.get('content-type');
-    if (!contentType?.includes('application/json')) {
+    if (!res.headers.get('content-type')?.includes('application/json')) {
       const text = await res.text();
       console.error('Non-JSON response received:', text.slice(0, 200));
       throw new Error(`Server returned non-JSON response. Status: ${res.status}`);
