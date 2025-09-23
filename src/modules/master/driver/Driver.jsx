@@ -175,8 +175,29 @@ const Driver = () => {
     fetchData(1, rowsPerPage, resetFilter, searchTerm);
   };
 
-  const handleFileUpload = () => {
-    console.log(file);
+  const handleFileUpload = async (event) => {
+    event.preventDefault();
+    if (!file) {
+      alert('Please select a file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=driver`, formData);
+      if (res.success) {
+        alert(res.message);
+        if (fileInputRef.current) fileInputRef.current.value = null;
+        fetchData();
+      } else {
+        alert(res.message || 'Something went wrong.');
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Upload failed.');
+    }
   };
 
   const handleExport = async () => {

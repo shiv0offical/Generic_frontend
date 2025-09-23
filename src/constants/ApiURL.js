@@ -19,6 +19,7 @@ export const APIURL = {
   FEEDBACK: 'feedback',
   PLANTINTIME: 'plantInTime',
   PUNCHLOGREPORT: 'punchlogreportv2',
+  UPLOAD: 'upload',
 
   //DASHBOARD APIS
   TOTALONBOARDEMP: 'dashboardemp',
