@@ -203,15 +203,16 @@ function Employee() {
 
   const handleFileUpload = async (event) => {
     event.preventDefault();
-    if (!file) return alert('Please select a file.');
+    if (!file) {
+      alert('Please select a file.');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const res = await ApiService.postFormData(`${APIURL.EMPLOYEE}/bulk`, formData, {
-        company_id: companyID,
-      });
+      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=employee`, formData);
       if (res.success) {
         alert(res.message);
         if (fileInputRef.current) fileInputRef.current.value = null;
@@ -221,6 +222,7 @@ function Employee() {
       }
     } catch (error) {
       console.error('Upload failed:', error);
+      alert('Upload failed.');
     }
   };
 

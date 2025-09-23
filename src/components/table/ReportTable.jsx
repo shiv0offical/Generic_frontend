@@ -89,16 +89,16 @@ const ReportTable = ({
                     <CircularProgress size={28} className='my-2' />
                   </TableCell>
                 </TableRow>
-              ) : error ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} align='center'>
-                    <div className='text-red-700 text-center w-full py-2'>{error}</div>
-                  </TableCell>
-                </TableRow>
               ) : sortedData.length === 0 ? (
                 <TableRow sx={{ height: 36 }}>
                   <TableCell colSpan={columns.length} align='center' sx={{ height: 60 }}>
                     No data found
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} align='center'>
+                    <div className='text-red-700 text-center w-full py-2'>{error}</div>
                   </TableCell>
                 </TableRow>
               ) : (

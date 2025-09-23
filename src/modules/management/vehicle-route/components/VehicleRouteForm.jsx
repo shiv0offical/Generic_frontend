@@ -205,7 +205,6 @@ const VehicleRouteForm = () => {
       const res = rowData?.id
         ? await ApiService.put(`${APIURL.VEHICLE_ROUTE}/${id}?company_id=${companyID}`, payload)
         : await ApiService.post(APIURL.VEHICLE_ROUTE, payload);
-      alert(res.message || (res.success ? 'Success!' : 'Something went wrong.'));
       if (res.success) navigate('/management/vehicle-route');
     } catch (error) {
       console.error(error);

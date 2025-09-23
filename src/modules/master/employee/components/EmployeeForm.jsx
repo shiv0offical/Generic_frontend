@@ -33,6 +33,19 @@ const initialFormVal = {
   longitude: '',
 };
 
+function isValidLatLng(lat, lng) {
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  return (
+    !isNaN(latNum) &&
+    !isNaN(lngNum) &&
+    latNum >= -90 &&
+    latNum <= 90 &&
+    lngNum >= -180 &&
+    lngNum <= 180
+  );
+}
+
 function EmployeeForm() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -225,6 +238,12 @@ function EmployeeForm() {
   const addressOptions = Array.isArray(addressOnSearch)
     ? addressOnSearch.map((item) => ({ label: item.display_name, value: item.place_id, otherData: item }))
     : [];
+
+  // --- Begin: Map marker validation logic ---
+  const lat = formVal.latitude;
+  const lng = formVal.longitude;
+  const hasValidLatLng = isValidLatLng(lat, lng);
+  // --- End: Map marker validation logic ---
 
   return (
     <div className='w-full h-full p-2'>
@@ -617,7 +636,7 @@ function EmployeeForm() {
                         url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
                         attribution='&copy; OpenStreetMap contributors'
                       />
-                      {formVal.latitude && formVal.longitude && (
+                      {hasValidLatLng && (
                         <Marker
                           key={formVal.latitude}
                           position={[parseFloat(formVal.latitude), parseFloat(formVal.longitude)]}
