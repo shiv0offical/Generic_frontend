@@ -45,11 +45,13 @@ const VehicleRoute = () => {
       busNumber: item.vehicle?.vehicle_number || item.vehicle?.vehicle_name || '-',
       vehicleID: item.vehicle_id,
       routeName: item.name,
-      shiftId: item?.stops?.[0]?.shift_id,
-      routeStops: item?.routes,
-      busDriver: item.vehicle?.driver ? `${item.vehicle.driver.first_name} ${item.vehicle.driver.last_name}` : '-',
+      shiftId: Array.isArray(item.stops) && item.stops.length > 0 ? item.stops[0].shift_id : '-',
+      routeStops: item.routes,
+      busDriver: item.vehicle?.driver
+        ? `${item.vehicle.driver.first_name ?? ''} ${item.vehicle.driver.last_name ?? ''}`.trim() || '-'
+        : '-',
       status: typeof item.status === 'string' ? item.status : item.active === 1 ? 'Active' : 'Inactive',
-      createdAt: dayjs(item.created_at).format('YYYY-MM-DD'),
+      createdAt: item.created_at ? dayjs(item.created_at).format('YYYY-MM-DD') : '-',
       row: item,
     })) || [];
 

@@ -124,20 +124,45 @@ const VehicleRouteForm = () => {
   useEffect(() => {
     if (!rowData) return;
     const vehicleId = getVehicleId(rowData);
-    const v = vehicles.find((veh) => veh.id === vehicleId);
-    setSelectedVehicle(
-      v
-        ? { value: v.id, label: v.vehicle?.vehicle_number || v.vehicle_number || v.vehicle_name || v.label }
-        : vehicleId
-        ? { value: vehicleId, label: v?.vehicle?.vehicle_number || v?.vehicle_number || v?.busNumber || v?.label }
-        : null
-    );
+    if (vehicleId && vehicles.length > 0) {
+      const foundVehicle = vehicles.find((v) => v.id === vehicleId);
+      if (foundVehicle) {
+        setSelectedVehicle({
+          value: foundVehicle.id,
+          label:
+            foundVehicle.vehicle?.vehicle_number ||
+            foundVehicle.vehicle_number ||
+            foundVehicle.vehicle_name ||
+            foundVehicle.label ||
+            '',
+        });
+      }
+    }
     setRouteName(getRouteName(rowData));
-    setSelectedShift(rowData.shiftId || rowData.shift_id || shifts[0].id);
+
+    setSelectedShift(
+      rowData.shiftId || rowData.shift_id || (rowData.stops && rowData.stops[0]?.shift_id) || shifts[0].id
+    );
 
     if (Array.isArray(rowData.Vehicle_Route_Stops) && rowData.Vehicle_Route_Stops.length > 0) {
       setStopPoints(
         rowData.Vehicle_Route_Stops.map((s) => ({
+          id: s.id || Date.now() + Math.random(),
+          address: s.address || '',
+          latitude: s.latitude || '',
+          longitude: s.longitude || '',
+          time: toTimeInputValue(s.time || ''),
+          returnTime: toTimeInputValue(s.return_time || ''),
+          distance: s.distance || 0,
+        }))
+      );
+    } else if (
+      Array.isArray(rowData.stops) &&
+      rowData.stops.length > 0 &&
+      (rowData.stops[0].address || rowData.stops[0].latitude)
+    ) {
+      setStopPoints(
+        rowData.stops.map((s) => ({
           id: s.id || Date.now() + Math.random(),
           address: s.address || '',
           latitude: s.latitude || '',
@@ -154,8 +179,9 @@ const VehicleRouteForm = () => {
   const handleStopChange = (idx, key, value) => {
     setStopPoints((prevStops) => {
       const newStops = [...prevStops];
-      if (key === 'time' || key === 'returnTime')
+      if (key === 'time' || key === 'returnTime') {
         if (typeof value === 'string' && value.length > 5) value = value.slice(0, 5);
+      }
       newStops[idx] = { ...newStops[idx], [key]: value };
       if (
         ['latitude', 'longitude'].includes(key) &&
@@ -190,10 +216,20 @@ const VehicleRouteForm = () => {
 
     try {
       const id = rowData?.routeID || rowData?.id;
-      const res = rowData?.id
-        ? await ApiService.put(`${APIURL.VEHICLE_ROUTE}/${id}?company_id=${companyID}`, payload)
-        : await ApiService.post(APIURL.VEHICLE_ROUTE, payload);
-      if (res.success) navigate('/management/vehicle-route');
+      let res;
+      if (rowData?.id) {
+        res = await ApiService.put(`${APIURL.VEHICLE_ROUTE}/${id}?company_id=${companyID}`, payload);
+        if (res.success) {
+          alert('Route updated successfully!');
+          navigate('/management/vehicle-route');
+        }
+      } else {
+        res = await ApiService.post(APIURL.VEHICLE_ROUTE, payload);
+        if (res.success) {
+          alert('Route created successfully!');
+          navigate('/management/vehicle-route');
+        }
+      }
     } catch (error) {
       console.error(error);
       alert('Something went wrong!');
