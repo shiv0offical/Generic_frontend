@@ -170,18 +170,6 @@ const VehicleRouteForm = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedVehicle?.value) {
-      alert('Please select a vehicle.');
-      return;
-    }
-    if (!routeName) {
-      alert('Please enter a route name.');
-      return;
-    }
-    if (!stopPoints.length || stopPoints.some((s) => !s.address || !s.latitude || !s.longitude)) {
-      alert('Please fill all stop points with address, latitude, and longitude.');
-      return;
-    }
     const payload = {
       company_id: companyID,
       vehicle_id: selectedVehicle?.value,
