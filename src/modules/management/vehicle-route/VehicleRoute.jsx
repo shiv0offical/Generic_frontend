@@ -45,7 +45,7 @@ const VehicleRoute = () => {
       busNumber: item.vehicle?.vehicle_number || item.vehicle?.vehicle_name || '-',
       vehicleID: item.vehicle_id,
       routeName: item.name,
-      shiftId: item?.routes?.[0]?.shift_id,
+      shiftId: item?.shift_id,
       routeStops: item?.routes,
       busDriver: item.vehicle?.driver ? `${item.vehicle.driver.first_name} ${item.vehicle.driver.last_name}` : '-',
       status: typeof item.status === 'string' ? item.status : item.active === 1 ? 'Active' : 'Inactive',
