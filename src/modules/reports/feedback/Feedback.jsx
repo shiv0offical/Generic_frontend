@@ -35,7 +35,9 @@ function Feedback() {
 
   return (
     <div className='w-full h-full p-2'>
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Feedback Report</h1>
+      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>
+        Feedback Report (Total: {feedbackReportData?.pagination?.total || 0})
+      </h1>
       <ReportTable
         columns={columns}
         data={tableData}

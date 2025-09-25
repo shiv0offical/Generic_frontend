@@ -80,7 +80,7 @@ const Department = () => {
       </IModal>
       <div className='w-full h-full p-2'>
         <div className='flex justify-between items-center mb-4'>
-          <h1 className='text-2xl font-bold text-[#07163d]'>Departments</h1>
+          <h1 className='text-2xl font-bold text-[#07163d]'>Departments (Total: {pagination?.total || 0})</h1>
           <div className='flex justify-between gap-4'>
             <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
             <button

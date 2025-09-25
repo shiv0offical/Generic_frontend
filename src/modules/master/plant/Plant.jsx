@@ -79,7 +79,7 @@ const Plant = () => {
       </IModal>
       <div className='w-full h-full p-2'>
         <div className='flex justify-between items-center mb-4'>
-          <h1 className='text-2xl font-bold text-[#07163d]'>Plants</h1>
+          <h1 className='text-2xl font-bold text-[#07163d]'>Plants (Total: {pagination?.total || 0})</h1>
           <div className='flex gap-4 items-center'>
             <CommonSearch searchQuery={searchTerm} setSearchQuery={setSearchTerm} />
             <button

@@ -5,17 +5,28 @@ import { ApiService } from '../../../services';
 import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import { useDispatch, useSelector } from 'react-redux';
+import CommonSearch from '../../../components/CommonSearch';
+import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import { setVehicleRoute } from '../../../redux/vehicleRouteSlice';
 import { TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
 import { Table, TableBody, TableCell, TableContainer, CircularProgress } from '@mui/material';
-import CommonSearch from '../../../components/CommonSearch';
+
+const shifts = [
+  { id: '2f7d76b8-87a9-4dc1-822a-a39e99b314e9', name: 'Night' },
+  { id: '1b0b7594-c88c-470b-a956-f8f79918fd36', name: 'Day' },
+];
+
+const getShiftName = (shiftId) => {
+  const found = shifts.find((s) => s.id === shiftId);
+  return found ? found.name : '-';
+};
 
 const columns = [
   { key: 'busNumber', header: 'Bus Number' },
   { key: 'routeName', header: 'Route Name' },
   { key: 'busDriver', header: 'Bus Driver' },
+  { key: 'shift', header: 'Shift' },
   { key: 'status', header: 'Status' },
   { key: 'createdAt', header: 'Created At' },
 ];
@@ -39,21 +50,25 @@ const VehicleRoute = () => {
   }, [dispatch, searchQuery, page, limit]);
 
   const processedData =
-    vehicleRoutes?.routes?.map((item, i) => ({
-      id: page * limit + i + 1,
-      routeID: item.id,
-      busNumber: item.vehicle?.vehicle_number || item.vehicle?.vehicle_name || '-',
-      vehicleID: item.vehicle_id,
-      routeName: item.name,
-      shiftId: Array.isArray(item.stops) && item.stops.length > 0 ? item.stops[0].shift_id : '-',
-      routeStops: item.routes,
-      busDriver: item.vehicle?.driver
-        ? `${item.vehicle.driver.first_name ?? ''} ${item.vehicle.driver.last_name ?? ''}`.trim() || '-'
-        : '-',
-      status: typeof item.status === 'string' ? item.status : item.active === 1 ? 'Active' : 'Inactive',
-      createdAt: item.created_at ? dayjs(item.created_at).format('YYYY-MM-DD') : '-',
-      row: item,
-    })) || [];
+    vehicleRoutes?.routes?.map((item, i) => {
+      const shiftId = Array.isArray(item.stops) && item.stops.length > 0 ? item.stops[0].shift_id : '-';
+      return {
+        id: page * limit + i + 1,
+        routeID: item.id,
+        busNumber: item.vehicle?.vehicle_number || item.vehicle?.vehicle_name || '-',
+        vehicleID: item.vehicle_id,
+        routeName: item.name,
+        shiftId: shiftId,
+        shift: getShiftName(shiftId),
+        routeStops: item.routes,
+        busDriver: item.vehicle?.driver
+          ? `${item.vehicle.driver.first_name ?? ''} ${item.vehicle.driver.last_name ?? ''}`.trim() || '-'
+          : '-',
+        status: typeof item.status === 'string' ? item.status : item.active === 1 ? 'Active' : 'Inactive',
+        createdAt: item.created_at ? dayjs(item.created_at).format('YYYY-MM-DD') : '-',
+        row: item,
+      };
+    }) || [];
 
   const handleSort = (columnKey) => {
     const isAsc = orderBy === columnKey && order === 'asc';
@@ -94,7 +109,7 @@ const VehicleRoute = () => {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Vehicle Route</h1>
+        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Vehicle Route (Total: {totalCount})</h1>
         <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>

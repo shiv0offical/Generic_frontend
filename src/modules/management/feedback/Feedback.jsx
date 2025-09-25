@@ -97,7 +97,7 @@ function Feedback() {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Feedbacks</h1>
+        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Feedbacks (Total: {totalCount})</h1>
         <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>

@@ -290,7 +290,7 @@ const Driver = () => {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center mb-4'>
-        <h1 className='text-2xl font-bold text-[#07163d]'>Driver</h1>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Driver (Total: {totalCount})</h1>
         <CommonSearch searchQuery={searchTerm} setSearchQuery={setSearchTerm} />
       </div>
       {isStatusModalOpen && selectedDriver && (

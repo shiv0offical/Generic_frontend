@@ -81,7 +81,7 @@ function Geofence() {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Geofence</h1>
+        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Geofence (Total: {totalCount})</h1>
         <div className='flex gap-x-4'>
           <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           <Link to='/management/geofence/create'>

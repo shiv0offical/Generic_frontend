@@ -141,7 +141,7 @@ function RouteChange() {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Route Change Request</h1>
+        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Route Change Request (Total: {totalCount})</h1>
         <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
 

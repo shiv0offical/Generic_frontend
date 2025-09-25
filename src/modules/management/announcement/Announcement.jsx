@@ -106,7 +106,7 @@ function Announcement() {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Announcements</h1>
+        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Announcements (Total: {totalCount})</h1>
         <div className='flex gap-x-4'>
           <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           <Link to='/management/announcement/create'>

@@ -348,7 +348,7 @@ function Employee() {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between mb-4'>
-        <h1 className='text-2xl font-bold text-[#07163d]'>Employee</h1>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Employee (Total: {totalCount})</h1>
         <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
 
