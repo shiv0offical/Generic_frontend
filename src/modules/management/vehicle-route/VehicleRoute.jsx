@@ -23,9 +23,9 @@ const getShiftName = (shiftId) => {
 };
 
 const columns = [
-  { key: 'busNumber', header: 'Bus Number' },
+  { key: 'busNumber', header: 'Vehicle Number' },
   { key: 'routeName', header: 'Route Name' },
-  { key: 'busDriver', header: 'Bus Driver' },
+  { key: 'busDriver', header: 'Vehicle Driver' },
   { key: 'shift', header: 'Shift' },
   { key: 'status', header: 'Status' },
   { key: 'createdAt', header: 'Created At' },

@@ -159,7 +159,7 @@ function PlantInTimeForm() {
             <div className='grid lg:grid-cols-2 md:grid-cols-2 sm:grid-cols-1  gap-4'>
               <div>
                 <label className='block mb-2 text-sm font-medium text-gray-900'>
-                  Select Bus <span className='text-red-500'>*</span>
+                  Select Vehicle <span className='text-red-500'>*</span>
                 </label>
                 <Autocomplete
                   disablePortal
@@ -175,7 +175,7 @@ function PlantInTimeForm() {
                     });
                   }}
                   value={buses.find((opt) => opt.value === formValues.department) || null}
-                  renderInput={(params) => <TextField {...params} label='Select Bus' />}
+                  renderInput={(params) => <TextField {...params} label='Select Vehicle' />}
                 />
 
                 {busesError && (
@@ -192,7 +192,7 @@ function PlantInTimeForm() {
 
               <div>
                 <label className='block mb-2 text-sm font-medium text-gray-900'>
-                  Select Bus Route <span className='text-red-500'>*</span>
+                  Select Vehicle Route <span className='text-red-500'>*</span>
                 </label>
                 <Autocomplete
                   disablePortal
@@ -208,7 +208,7 @@ function PlantInTimeForm() {
                     });
                   }}
                   value={busRoutes.find((opt) => opt.value === formValues.busRoute) || null}
-                  renderInput={(params) => <TextField {...params} label='Select Bus Route' />}
+                  renderInput={(params) => <TextField {...params} label='Select Vehicle Route' />}
                 />
 
                 {routeError && (

@@ -49,7 +49,7 @@ function CounterCard({ runningDevices }) {
         <div className='flex items-center shadow-sm bg-white p-1 rounded-md w-full'>
           <img src={runningBusIcon} alt='running-bus-icon' className='w-14 ml-2' />
           <div className='flex flex-col ml-3'>
-            <span className='text-sm text-gray-700'>Total Bus Running</span>
+            <span className='text-sm text-gray-700'>Total Vehicle Running</span>
             <span className='font-semibold text-lg'>{runningDevices.length}</span>
           </div>
         </div>

@@ -313,7 +313,7 @@ function FilterOption({
                 options={busRoutes}
                 size='small'
                 fullWidth
-                renderInput={(params) => <TextField {...params} label='Select Bus Route' />}
+                renderInput={(params) => <TextField {...params} label='Select Vehicle Route' />}
                 isOptionEqualToValue={(option, value) => option.value === value}
                 getOptionLabel={(option) => option.label}
                 onChange={(event, newValue) => {
@@ -331,7 +331,7 @@ function FilterOption({
                 size='small'
                 fullWidth
                 disableCloseOnSelect
-                renderInput={(params) => <TextField {...params} label='Select Bus' />}
+                renderInput={(params) => <TextField {...params} label='Select Vehicle' />}
                 isOptionEqualToValue={(option, value) => option.value === value.value}
                 getOptionLabel={(option) => option.label}
                 onChange={handleBusChange}
@@ -427,7 +427,7 @@ function FilterOption({
                 size='small'
                 fullWidth
                 disableCloseOnSelect
-                renderInput={(params) => <TextField {...params} label='Select Bus Route No' />}
+                renderInput={(params) => <TextField {...params} label='Select Vehicle Route No' />}
                 isOptionEqualToValue={(option, value) => option.value === value.value}
                 getOptionLabel={(option) => option.label}
                 onChange={handleBusRouteNoChange}

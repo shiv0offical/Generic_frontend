@@ -105,9 +105,9 @@ function EmployeePunchDetails() {
     <div className='w-full h-full p-2'>
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
         <div className='p-4'>
-          <h3 className='text-2xl font-bold mb-4 text-[#07163d]'>Bus Details</h3>
+          <h3 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehicle Details</h3>
           <ul className='list-disc list-inside'>
-            <li>Bus Name:TN87E6249</li>
+            <li>Vehicle Name:TN87E6249</li>
             <li>Vehicle Number : TN87E6249</li>
             <li>Speed : 0</li>
             <li>Total Onboarded Employee : 0</li>

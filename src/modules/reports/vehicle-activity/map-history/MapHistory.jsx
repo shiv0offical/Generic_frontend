@@ -4,7 +4,7 @@ import moment from 'moment-timezone';
 import FilterOption from '../../../../components/FilterOption';
 
 const columns = [
-  { key: 'busName', header: 'Bus Name' },
+  { key: 'busName', header: 'Vehicle Name' },
   { key: 'imei', header: 'IMEI' },
   { key: 'speed', header: 'speed' },
   { key: 'latitude', header: 'Latitude' },

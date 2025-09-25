@@ -13,7 +13,7 @@ import { TableHead, TablePagination, TableRow, CircularProgress } from '@mui/mat
 import { Table, TableBody, TableCell, TableContainer, TableSortLabel } from '@mui/material';
 
 const columns = [
-  { key: 'busName', header: 'Bus Name' },
+  { key: 'busName', header: 'Vehicle Name' },
   { key: 'geofenceName', header: 'Geofence Name' },
   { key: 'geofenceType', header: 'Geofence Type' },
   { key: 'createdAt', header: 'Created At' },
@@ -85,7 +85,9 @@ function Geofence() {
         <div className='flex gap-x-4'>
           <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           <Link to='/management/geofence/create'>
-            <button className='bg-[#07163d] text-white px-3 py-2 rounded-[3px] cursor-pointer'>Add Bus Geofence</button>
+            <button className='bg-[#07163d] text-white px-3 py-2 rounded-[3px] cursor-pointer'>
+              Add Vehicle Geofence
+            </button>
           </Link>
         </div>
       </div>

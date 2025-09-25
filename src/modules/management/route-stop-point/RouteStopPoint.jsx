@@ -2,7 +2,7 @@ import CommanTable from '../../../components/table/CommonTable';
 import { Link, useNavigate } from 'react-router-dom';
 
 const columns = [
-  { key: 'id', header: 'Bus Route ID' },
+  { key: 'id', header: 'Vehicle Route ID' },
   { key: 'shift', header: 'Shift' },
   { key: 'createdAt', header: 'Created At' },
 ];

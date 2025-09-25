@@ -52,12 +52,17 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
     lat: selected_vehicle?.latitude || 0,
     lng: selected_vehicle?.longitude || 0,
     seats: selected_vehicle?.seats,
-    speed: selected_vehicle?.speed_limit,
-    onboardEmp: 2,
-    assignSeat: selected_vehicle?.routes?.[0]?.total_assigned_seat,
-    driverName: `${selected_vehicle?.driver?.first_name || ''} ${selected_vehicle?.driver?.last_name || ''}`,
-    driverNum: selected_vehicle?.driver?.phone_number,
-    routeName: selected_vehicle?.routes?.[0]?.route_name,
+    speed: selected_vehicle?.speed ?? selected_vehicle?.speed_limit ?? '-',
+    onboardEmp: '-',
+    assignSeat: selected_vehicle?.routes?.[0]?.total_assigned_seat ?? '-',
+    driverName: selected_vehicle?.driver
+      ? `${selected_vehicle.driver.first_name || ''} ${selected_vehicle.driver.last_name || ''}`.trim()
+      : '-',
+    driverNum: selected_vehicle?.driver?.phone_number ?? '-',
+    routeName: selected_vehicle?.routes?.[0]?.name ?? selected_vehicle?.routes?.[0]?.route_name ?? '-',
+    totalDistance: Number(selected_vehicle?.ioElements?.find((el) => el.propertyName === 'totalOdometer')?.value)
+      ? `${(selected_vehicle.ioElements.find((el) => el.propertyName === 'totalOdometer').value / 1000).toFixed(2)} km`
+      : '-',
   };
 
   return (
@@ -88,7 +93,7 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
       {/* details */}
       <div className='details-panel'>
         {[
-          ['Bus Name', devices.name],
+          ['Vehicle Name', devices.name],
           ['Vehicle Number', devices.number],
           ['Route Name', devices.routeName],
           ['Total Distance', '0.00 m'],

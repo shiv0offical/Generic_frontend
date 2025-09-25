@@ -20,10 +20,10 @@ function FilterOption({
           </AccordionSummary>
           <AccordionDetails>
             <div className='grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 grid-cols-1 gap-4 justify-center'>
-              {/* Select Bus */}
+              {/* Select Vehicle */}
               <div className='flex items-end gap-2'>
                 <div className='flex-1'>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Select Bus</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>Select Vehicle</label>
                   <Autocomplete
                     disablePortal
                     options={busOption}
@@ -37,15 +37,15 @@ function FilterOption({
                       });
                     }}
                     value={busOption.find((opt) => opt.value === filterData.bus) || null}
-                    renderInput={(params) => <TextField {...params} label='Select Bus' />}
+                    renderInput={(params) => <TextField {...params} label='Select Vehicle' />}
                   />
                 </div>
               </div>
 
-              {/* Select Bus Route */}
+              {/* Select Vehicle Route */}
               <div className='flex items-end gap-2 flex-wrap'>
                 <div className='flex-1'>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Select Bus Route</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>Select Vehicle Route</label>
                   <Autocomplete
                     disablePortal
                     options={busRouteOptions}
@@ -59,7 +59,7 @@ function FilterOption({
                       });
                     }}
                     value={busRouteOptions.find((opt) => opt.value === filterData.busRoute) || null}
-                    renderInput={(params) => <TextField {...params} label='Select Bus Route' />}
+                    renderInput={(params) => <TextField {...params} label='Select Vehicle Route' />}
                   />
                 </div>
                 <button

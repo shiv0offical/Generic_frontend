@@ -36,14 +36,7 @@ const initialFormVal = {
 function isValidLatLng(lat, lng) {
   const latNum = Number(lat);
   const lngNum = Number(lng);
-  return (
-    !isNaN(latNum) &&
-    !isNaN(lngNum) &&
-    latNum >= -90 &&
-    latNum <= 90 &&
-    lngNum >= -180 &&
-    lngNum <= 180
-  );
+  return !isNaN(latNum) && !isNaN(lngNum) && latNum >= -90 && latNum <= 90 && lngNum >= -180 && lngNum <= 180;
 }
 
 function EmployeeForm() {
@@ -446,7 +439,7 @@ function EmployeeForm() {
                   />
                 </div>
                 <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>Bus Route</label>
+                  <label className='block mb-2 text-sm font-medium text-gray-900'>Vehicle Route</label>
                   <Autocomplete
                     disablePortal
                     loading={routeDropdown.loading}

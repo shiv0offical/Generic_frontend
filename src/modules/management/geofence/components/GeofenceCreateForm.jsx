@@ -108,7 +108,7 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
       {({ values, errors, touched, handleBlur, handleSubmit, setFieldValue }) => (
         <form onSubmit={handleSubmit}>
           <div className='mb-3'>
-            <label className='block mb-2 text-sm font-medium text-gray-900'>Select Bus</label>
+            <label className='block mb-2 text-sm font-medium text-gray-900'>Select Vehicle</label>
             <Autocomplete
               disablePortal
               options={vehicles.map((item) => ({ label: item.vehicle_name, value: item.id }))}
@@ -125,7 +125,7 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               }
               onChange={(_, newValue) => setFieldValue('bus', newValue ? newValue.value : '')}
               onBlur={handleBlur}
-              renderInput={(params) => <TextField {...params} label='Select Bus' />}
+              renderInput={(params) => <TextField {...params} label='Select Vehicle' />}
             />
             {errors.bus && touched.bus && <span className='text-red-500'>{errors.bus}</span>}
           </div>

@@ -11,7 +11,7 @@ import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice
 const dummyData = [
   {
     created_at: new Date().toISOString(),
-    vehicle_type: 'Bus',
+    vehicle_type: 'Vehicle',
     vehicle_number: 'KA01AB1234',
     Vehicle_Route: { route_number: 'R1', route_name: 'Main Route' },
     vehicle_driver: { first_name: 'John', last_name: 'Doe', phone_number: '9876543210' },

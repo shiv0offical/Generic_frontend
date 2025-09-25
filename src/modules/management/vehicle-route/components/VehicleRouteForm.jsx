@@ -312,7 +312,7 @@ const VehicleRouteForm = () => {
                 <b>Route Name:</b> {getRouteName(rowData)}
               </div>
               <div>
-                <b>Bus Number:</b> {getVehicleNumber(rowData)}
+                <b>Vehicle Number:</b> {getVehicleNumber(rowData)}
               </div>
               <div>
                 <b>Driver:</b> {getDriverName(rowData)}

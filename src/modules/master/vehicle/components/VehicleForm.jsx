@@ -12,9 +12,9 @@ function VehicleForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const rowData = location.state;
-  const action = location.pathname === '/master/vehicle/view';
-
-  const isViewMode = action === true;
+  const isViewMode =
+    location.pathname === '/master/vehicle/view' ||
+    (rowData && (rowData.action === 'VIEW' || rowData.action === 'view'));
 
   const initialFormVal = {
     selectedDriver: '',
@@ -41,24 +41,25 @@ function VehicleForm() {
     valueSelector: (d) => d.id,
   });
 
+  // Populate form values from rowData for edit/view
+  useEffect(() => {
+    if (rowData) {
+      setFormVal({
+        selectedDriver: rowData.driverID || rowData.selectedDriver || '', // fallback for edit/create
+        vehicleName: rowData.vehicleName || rowData.busName || '',
+        vehicleNumber: rowData.vehicleNumber || rowData.busNumber || '',
+        simNumber: rowData.simNumber || '',
+        imeiNumber: rowData.imeiNumber || '',
+        vehicleOverspeed: rowData.speedLimit !== undefined ? rowData.speedLimit : '',
+        seats: rowData.seatCount !== undefined ? rowData.seatCount : '',
+      });
+    }
+  }, [rowData]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormVal((prev) => ({ ...prev, [name]: value }));
   };
-
-  useEffect(() => {
-    if (rowData) {
-      setFormVal({
-        selectedDriver: rowData.dirverID,
-        vehicleName: rowData.busName,
-        vehicleNumber: rowData.busNumber,
-        simNumber: rowData.simNumber,
-        imeiNumber: rowData.imeiNumber,
-        vehicleOverspeed: rowData.speedLimit,
-        seats: rowData.seatCount,
-      });
-    }
-  }, []);
 
   const handleFormSubmit = async (event) => {
     event.preventDefault();
@@ -75,7 +76,7 @@ function VehicleForm() {
     };
 
     try {
-      if (rowData) {
+      if (rowData && rowData.actual_id) {
         await dispatch(updateVehicle({ id: rowData.actual_id, payload })).unwrap();
       } else {
         await dispatch(createVehicle(payload)).unwrap();
@@ -105,30 +106,37 @@ function VehicleForm() {
                   <label className='block mb-2 text-sm font-medium text-gray-900'>
                     Select Vehicle Driver <span className='text-red-500'>*</span>
                   </label>
-                  <Autocomplete
-                    disabled={isViewMode}
-                    disablePortal
-                    options={driverOptions}
-                    loading={loading}
-                    value={driverOptions.find((opt) => opt.value === formVal.selectedDriver) || null}
-                    onChange={(event, newValue) => {
-                      setFormVal((prev) => ({ ...prev, selectedDriver: newValue ? newValue.value : '' }));
-                    }}
-                    isOptionEqualToValue={(option, value) => option.value === value}
-                    getOptionLabel={(option) => option?.label || ''}
-                    size='small'
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label='Select Vehicle Driver'
-                        size='small'
-                        fullWidth
-                        value={driverOptions.find((opt) => opt.value === formVal.selectedDriver) || null}
-                      />
-                    )}
-                  />
+                  {isViewMode ? (
+                    <TextField size='small' fullWidth disabled value={rowData?.driverName || ''} label='Driver Name' />
+                  ) : (
+                    <Autocomplete
+                      disabled={isViewMode}
+                      disablePortal
+                      options={driverOptions}
+                      loading={loading}
+                      value={driverOptions.find((opt) => opt.value === formVal.selectedDriver) || null}
+                      onChange={(event, newValue) => {
+                        setFormVal((prev) => ({
+                          ...prev,
+                          selectedDriver: newValue ? newValue.value : '',
+                        }));
+                      }}
+                      isOptionEqualToValue={(option, value) => option.value === value}
+                      getOptionLabel={(option) => option?.label || ''}
+                      size='small'
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label='Select Vehicle Driver'
+                          size='small'
+                          fullWidth
+                          value={driverOptions.find((opt) => opt.value === formVal.selectedDriver) || null}
+                        />
+                      )}
+                    />
+                  )}
 
-                  {error && (
+                  {error && !isViewMode && (
                     <p className='text-red-500 text-sm mt-1'>
                       Failed to load drivers.{' '}
                       <button
@@ -153,7 +161,7 @@ function VehicleForm() {
                     fullWidth
                     required
                     placeholder='Vehicle Name'
-                    value={formVal.vehicleName}
+                    value={isViewMode ? rowData?.vehicleName || '' : formVal.vehicleName}
                     onChange={handleChange}
                   />
                 </div>
@@ -171,7 +179,7 @@ function VehicleForm() {
                     fullWidth
                     placeholder='Vehicle Number'
                     required
-                    value={formVal.vehicleNumber}
+                    value={isViewMode ? rowData?.vehicleNumber || '' : formVal.vehicleNumber}
                     onChange={handleChange}
                   />
                 </div>
@@ -189,7 +197,7 @@ function VehicleForm() {
                     fullWidth
                     placeholder='SIM No'
                     required
-                    value={formVal.simNumber}
+                    value={isViewMode ? rowData?.simNumber || '' : formVal.simNumber}
                     onChange={handleChange}
                   />
                 </div>
@@ -207,7 +215,7 @@ function VehicleForm() {
                     disabled={isViewMode}
                     placeholder='IMEI Number'
                     required
-                    value={formVal.imeiNumber}
+                    value={isViewMode ? rowData?.imeiNumber || '' : formVal.imeiNumber}
                     onChange={handleChange}
                   />
                 </div>
@@ -225,7 +233,13 @@ function VehicleForm() {
                     placeholder='Vehicle Overspeed'
                     required
                     disabled={isViewMode}
-                    value={formVal.vehicleOverspeed}
+                    value={
+                      isViewMode
+                        ? rowData?.speedLimit !== undefined
+                          ? rowData.speedLimit
+                          : ''
+                        : formVal.vehicleOverspeed
+                    }
                     onChange={handleChange}
                   />
                 </div>
@@ -243,10 +257,57 @@ function VehicleForm() {
                     placeholder='Seats'
                     required
                     disabled={isViewMode}
-                    value={formVal.seats}
+                    value={isViewMode ? (rowData?.seatCount !== undefined ? rowData.seatCount : '') : formVal.seats}
                     onChange={handleChange}
                   />
                 </div>
+
+                {isViewMode && (
+                  <>
+                    <div>
+                      <label className='block mb-2 text-sm font-medium text-gray-900'>Driver Email</label>
+                      <TextField
+                        size='small'
+                        fullWidth
+                        disabled
+                        value={rowData?.driverEmail || ''}
+                        label='Driver Email'
+                      />
+                    </div>
+                    <div>
+                      <label className='block mb-2 text-sm font-medium text-gray-900'>Driver Phone Number</label>
+                      <TextField
+                        size='small'
+                        fullWidth
+                        disabled
+                        value={rowData?.driverPhoneNumber || ''}
+                        label='Driver Phone Number'
+                      />
+                    </div>
+                    <div>
+                      <label className='block mb-2 text-sm font-medium text-gray-900'>Route Number</label>
+                      <TextField
+                        size='small'
+                        fullWidth
+                        disabled
+                        value={rowData?.routeNumber || ''}
+                        label='Route Number'
+                      />
+                    </div>
+                    <div>
+                      <label className='block mb-2 text-sm font-medium text-gray-900'>Route Name</label>
+                      <TextField size='small' fullWidth disabled value={rowData?.routeName || ''} label='Route Name' />
+                    </div>
+                    <div>
+                      <label className='block mb-2 text-sm font-medium text-gray-900'>Status</label>
+                      <TextField size='small' fullWidth disabled value={rowData?.status || ''} label='Status' />
+                    </div>
+                    <div>
+                      <label className='block mb-2 text-sm font-medium text-gray-900'>Created At</label>
+                      <TextField size='small' fullWidth disabled value={rowData?.createdAt || ''} label='Created At' />
+                    </div>
+                  </>
+                )}
               </div>
               <div className='flex justify-end gap-4 mt-4'>
                 {!isViewMode && (
