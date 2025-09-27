@@ -531,25 +531,25 @@ function FilterOption({
             <div className='flex gap-2.5'>
               <button
                 type='submit'
-                className='text-white bg-[#07163d] hover:bg-[rgb(7,22,61)] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'
+                className='text-white bg-[#07163d] hover:bg-[rgb(7,22,61)] font-medium rounded-sm text-sm w-24 px-5 py-2.5 cursor-pointer'
                 onClick={handleFormSubmit}>
                 Filter
               </button>
               <button
                 type='button'
-                className='text-white bg-gray-500 hover:bg-gray-600 font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'
+                className='text-white bg-gray-500 hover:bg-gray-600 font-medium rounded-sm text-sm w-24 px-5 py-2.5 cursor-pointer'
                 onClick={handleFormReset}>
                 Reset
               </button>
               <button
                 type='button'
-                className='text-white bg-[#1d31a6] hover:bg-[#1d31a6] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'
+                className='text-white bg-[#1d31a6] hover:bg-[#1d31a6] font-medium rounded-sm text-sm w-24 px-5 py-2.5 cursor-pointer'
                 onClick={handleExport}>
                 Export
               </button>
               <button
                 type='button'
-                className='text-white bg-red-600 hover:bg-red-700 font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'
+                className='text-white bg-red-600 hover:bg-red-700 font-medium rounded-sm text-sm w-24 px-5 py-2.5 cursor-pointer'
                 onClick={handleExportPDF}>
                 Export PDFs
               </button>

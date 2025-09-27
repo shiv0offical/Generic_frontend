@@ -1,7 +1,12 @@
 import moment from 'moment-timezone';
+import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import OverSpeedChart from './charts/OverSpeedLineChart';
+import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchOverSpeedReport } from '../../../redux/vehicleReportSlice';
 
 const columns = [
@@ -48,8 +53,10 @@ const columns = [
 
 function Overspeed() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
+  const company_id = localStorage.getItem('company_id');
 
   const { speedOverReportData, loading, error } = useSelector((state) => state?.vehicleReport);
 
@@ -57,6 +64,11 @@ function Overspeed() {
     dispatch(fetchOverSpeedReport({ page: page + 1, limit }));
   }, [dispatch, page, limit]);
 
+  useEffect(() => {
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id }));
+  }, [dispatch, company_id]);
+
+  const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
   const overspeedData = Array.isArray(speedOverReportData?.overspeedData) ? speedOverReportData.overspeedData : [];
   const totalCount = speedOverReportData?.pagination?.total || 0;
 
@@ -79,9 +91,72 @@ function Overspeed() {
     gmap: item.latitude && item.longitude ? `https://maps.google.com/?q=${item.latitude},${item.longitude}` : '',
   }));
 
+  const [filterData, setFilterData] = useState({ busRouteNo: '', fromDate: '', toDate: '' });
+
+  const routeOptions = Array.isArray(vehicleRoutes)
+    ? vehicleRoutes.map((route) => {
+        let routeNumber = 'N/A';
+        let routeName = 'N/A';
+
+        if (route?.route_number) routeNumber = route.route_number;
+        // Check if it exists in the first employee's vehicleRoute
+        else if (route?.Employee?.[0]?.vehicleRoute?.route_number)
+          routeNumber = route.Employee[0].vehicleRoute.route_number;
+
+        // Get route name
+        if (route?.name) {
+          routeName = route.name;
+        } else if (route?.Employee?.[0]?.vehicleRoute?.name) {
+          routeName = route.Employee[0].vehicleRoute.name;
+        }
+
+        return { label: `Route ${routeNumber} - ${routeName}`, value: route.vehicle_id };
+      })
+    : [];
+
+  const handleExport = () => {
+    // Add your export logic here
+    console.log('Exporting data...');
+  };
+
+  const handleFormSubmit = (event) => {
+    event.preventDefault();
+    const payload = { company_id, vehicle_id: filterData.busRouteNo, from: filterData.fromDate, to: filterData.toDate };
+    dispatch(fetchOverSpeedReport(payload)).then((res) => {
+      console.log(res, 'res');
+      if (res?.payload?.status == 200) {
+        toast.success(res?.payload?.message);
+      } else {
+        toast.error(res?.payload?.message);
+      }
+    });
+  };
+
+  const handleFormReset = () => {
+    setFilterData({ busRouteNo: '', fromDate: '', toDate: '' });
+  };
+
+  const handleView = (row) => {
+    navigate('/report/overspeed/view', { state: row });
+    console.log('Viewing data...', row);
+  };
+
   return (
     <div className='w-full h-full p-2'>
       <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Over Speed Report</h1>
+
+      <FilterOption
+        handleExport={handleExport}
+        handleFormSubmit={handleFormSubmit}
+        filterData={filterData}
+        setFilterData={setFilterData}
+        handleFormReset={handleFormReset}
+        busRouteNo={routeOptions}
+      />
+
+      <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
+        <OverSpeedChart data={speedOverReportData} />
+      </div>
       <ReportTable
         columns={columns}
         data={tableData}

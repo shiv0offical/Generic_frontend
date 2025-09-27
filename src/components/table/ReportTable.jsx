@@ -95,12 +95,6 @@ const ReportTable = ({
                     No data found
                   </TableCell>
                 </TableRow>
-              ) : error ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} align='center'>
-                    <div className='text-red-700 text-center w-full py-2'>{error}</div>
-                  </TableCell>
-                </TableRow>
               ) : (
                 sortedData.map((row, rowIndex) => (
                   <TableRow key={row.id || rowIndex} hover sx={{ height: 36 }}>

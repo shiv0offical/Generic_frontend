@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ReportTable from '../../../../components/table/ReportTable';
 import moment from 'moment-timezone';
 import FilterOption from '../../../../components/FilterOption';
 
 const columns = [
-  { key: 'busName', header: 'Vehicle Name' },
+  { key: 'busName', header: 'Bus Name' },
   { key: 'imei', header: 'IMEI' },
   { key: 'speed', header: 'speed' },
   { key: 'latitude', header: 'Latitude' },
   { key: 'longitude', header: 'Longitude' },
   {
     key: 'gmap',
-    header: 'Google-Map',
+    header: 'G-Map',
     render: (data) => (
       <a href={data} className='text-blue-700'>
-        Google-Map
+        G-Map
       </a>
     ),
   },

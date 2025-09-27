@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchEmergencyReportAlert } from '../../../redux/emergencyReportAlertSlice';
+import FilterOption from '../../../components/FilterOption';
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -75,11 +76,45 @@ function EmergencyAlert() {
       })
     : [];
 
+  const [filterData, setFilterData] = useState({
+    fromDate: '',
+    toDate: '',
+  });
+
+  const handleExport = () => {
+    // Add your export logic here
+  };
+
+  const handleFormSubmit = (event) => {
+    event.preventDefault();
+    const company_id = localStorage.getItem('company_id');
+    const payload = {
+      company_id,
+      start: new Date(filterData.fromDate).toISOString(),
+      end: new Date(filterData.toDate).toISOString(),
+    };
+    dispatch(fetchEmergencyReportAlert(payload));
+  };
+
+  const handleFormReset = () => {
+    setFilterData({
+      fromDate: '',
+      toDate: '',
+    });
+  };
+
   return (
     <div className='w-full h-full p-2'>
       <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>
         Emergency Alerts Report (Total: {emergencyReportAlertData?.pagination?.total ?? 0})
       </h1>
+      <FilterOption
+        handleExport={handleExport}
+        handleFormSubmit={handleFormSubmit}
+        filterData={filterData}
+        setFilterData={setFilterData}
+        handleFormReset={handleFormReset}
+      />
       <ReportTable
         columns={columns}
         data={tableData}

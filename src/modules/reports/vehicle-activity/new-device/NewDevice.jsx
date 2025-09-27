@@ -1,20 +1,11 @@
-import { useEffect, useState } from 'react';
-import ReportTable from '../../../../components/table/ReportTable';
-import CustomTab from '../components/CustomTab';
-import tabs from '../components/Tab';
-import { fetchVehicleActivityMoment, fetchVehicleMissingInflux } from '../../../../redux/vehicleActivitySlice';
-import { useDispatch } from 'react-redux';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-} from '@mui/material';
 import moment from 'moment';
+import tabs from '../components/Tab';
+import { useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react';
+import CustomTab from '../components/CustomTab';
+import { Table, TableBody, TableCell, TableContainer } from '@mui/material';
+import { fetchVehicleMissingInflux } from '../../../../redux/vehicleActivitySlice';
+import { TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
 
 const columns = [
   {
@@ -66,7 +57,7 @@ function NewDevice() {
   const dispatch = useDispatch();
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [orderBy, setOrderBy] = useState('');
   const [order, setOrder] = useState('asc');
   const [vehicleData, setVehicleData] = useState([]);
@@ -81,10 +72,11 @@ function NewDevice() {
     switch (key) {
       case 'vehicle_driver':
         return row?.vehicle_driver?.phone_number || '';
-      case 'vehicle_driver_name':
+      case 'vehicle_driver_name': {
         const first = row?.vehicle_driver?.first_name || '';
         const last = row?.vehicle_driver?.last_name || '';
         return `${first} ${last}`.trim();
+      }
       case 'routeDetails':
         return row?.vehicle_route || '';
       default:
@@ -168,7 +160,7 @@ function NewDevice() {
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[10, 15, 20, 25, 30]}
+          rowsPerPageOptions={[5, 10, 20]}
           component='div'
           count={vehicleData.length}
           rowsPerPage={rowsPerPage}

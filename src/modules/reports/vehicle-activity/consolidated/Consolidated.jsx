@@ -12,18 +12,18 @@ const columns = [
   { key: 'km', header: 'KM' },
   { key: 'speed', header: 'Speed' },
   { key: 'stutus', header: 'Status' },
-  { key: 'gmap', header: 'Google-Map', render: (data) => <a href={data}>Google-Map</a> },
+  { key: 'gmap', header: 'G-Map', render: (data) => <a href={data}>G-Map</a> },
 ];
 
 const data = [];
 
 function Consolidated() {
   const cards = [
-    { title: 'Total Vehicle', value: 11, color: '#1D4ED8' },
-    { title: 'Online Vehicle', value: 6, color: '#E11D48' },
-    { title: 'Moving Vehicle', value: 1, color: '#059669' },
-    { title: 'Idle Vehicle', value: 1, color: '#F59E0B' },
-    { title: 'Parked Vehicle', value: 4, color: '#DC2626' },
+    { title: 'Total Bus', value: 11, color: '#1D4ED8' },
+    { title: 'Online Bus', value: 6, color: '#E11D48' },
+    { title: 'Moving Bus', value: 1, color: '#059669' },
+    { title: 'Idle Bus', value: 1, color: '#F59E0B' },
+    { title: 'Parked Bus', value: 4, color: '#DC2626' },
     { title: 'Offline', value: 2, color: '#6B7280' },
     { title: 'Total KMs', value: '217.00', color: '#06B6D4' },
     { title: 'New Device', value: 3, color: '#881337' },

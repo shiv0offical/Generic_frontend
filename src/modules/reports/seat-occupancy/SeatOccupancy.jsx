@@ -1,8 +1,11 @@
 import moment from 'moment-timezone';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchSeatOccupancyReport } from '../../../redux/vehicleReportSlice';
+import { toast } from 'react-toastify';
 
 const columns = [
   { key: 'date', header: 'Date' },
@@ -19,6 +22,7 @@ function SeatOccupancy() {
   const dispatch = useDispatch();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
+  const company_id = localStorage.getItem('company_id');
 
   const { seatOccupancyReportData, loading, error } = useSelector((state) => state?.vehicleReport);
 
@@ -46,9 +50,79 @@ function SeatOccupancy() {
 
   const totalCount = seatOccupancyReportData?.pagination?.total || 0;
 
+  useEffect(() => {
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id }));
+  }, [dispatch, company_id]);
+
+  const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
+
+  const routeOptions = Array.isArray(vehicleRoutes)
+    ? vehicleRoutes.map((route) => {
+        let routeNumber = 'N/A';
+        let routeName = 'N/A';
+
+        if (route?.route_number) {
+          routeNumber = route.route_number;
+        }
+        // Check if it exists in the first employee's vehicleRoute
+        else if (route?.Employee?.[0]?.vehicleRoute?.route_number) {
+          routeNumber = route.Employee[0].vehicleRoute.route_number;
+        }
+
+        // Get route name
+        if (route?.name) {
+          routeName = route.name;
+        } else if (route?.Employee?.[0]?.vehicleRoute?.name) {
+          routeName = route.Employee[0].vehicleRoute.name;
+        }
+
+        return {
+          label: `Route ${routeNumber} - ${routeName}`,
+          value: route.id,
+        };
+      })
+    : [];
+
+  const [filterData, setFilterData] = useState({ busRouteNo: '', fromDate: '', toDate: '' });
+
+  const handleExport = () => {
+    // Add your export logic here
+    console.log('Exporting data...');
+  };
+
+  const handleFormSubmit = (event) => {
+    event.preventDefault();
+    const payload = {
+      company_id,
+      route_id: filterData.busRouteNo,
+      start: filterData.fromDate,
+      end: filterData.toDate,
+    };
+
+    dispatch(fetchSeatOccupancyReport(payload)).then((res) => {
+      if (res?.payload?.status == 200) {
+        toast.success(res?.payload?.message);
+      } else {
+        toast.error(res?.payload?.message);
+      }
+    });
+  };
+
+  const handleFormReset = () => {
+    setFilterData({ busRouteNo: '', fromDate: '', toDate: '' });
+  };
+
   return (
     <div className='w-full h-full p-2'>
       <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Seat Occupancy Report</h1>
+      <FilterOption
+        handleExport={handleExport}
+        handleFormSubmit={handleFormSubmit}
+        filterData={filterData}
+        setFilterData={setFilterData}
+        handleFormReset={handleFormReset}
+        busRouteNo={routeOptions}
+      />
       <ReportTable
         columns={columns}
         data={tableData}

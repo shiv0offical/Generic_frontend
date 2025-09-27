@@ -1,4 +1,6 @@
+import moment from 'moment';
 import { useState } from 'react';
+import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 
 const columns = [
@@ -61,9 +63,46 @@ function DestinationArrivalFemale() {
 
   const paginatedData = data.slice(page * limit, page * limit + limit);
 
+  const [filterData, setFilterData] = useState({
+    fromDate: '',
+    toDate: '',
+  });
+
+  const handleExport = () => {
+    // Add your export logic here
+    console.log('Exporting data...');
+  };
+
+  const handleFormSubmit = (event) => {
+    event.preventDefault();
+    // Add your form submission logic here
+    const fromDate = moment(filterData.fromDate).format('YYYY-MM-DD HH:mm:ss');
+    const toDate = moment(filterData.toDate).format('YYYY-MM-DD HH:mm:ss');
+    const formData = {
+      ...filterData,
+      fromDate,
+      toDate,
+    };
+    console.log('Form submitted', formData);
+  };
+
+  const handleFormReset = () => {
+    setFilterData({
+      fromDate: '',
+      toDate: '',
+    });
+  };
+
   return (
     <div className='w-full h-full p-2'>
       <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Arrival History Of Female Employees @ Destination</h1>
+      <FilterOption
+        handleExport={handleExport}
+        handleFormSubmit={handleFormSubmit}
+        filterData={filterData}
+        setFilterData={setFilterData}
+        handleFormReset={handleFormReset}
+      />
       <ReportTable
         columns={columns}
         data={paginatedData}

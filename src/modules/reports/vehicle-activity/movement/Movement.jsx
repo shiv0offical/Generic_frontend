@@ -1,64 +1,32 @@
 import moment from 'moment-timezone';
 import tabs from '../components/Tab';
+import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomTab from '../components/CustomTab';
 import { useDispatch, useSelector } from 'react-redux';
+import FilterOption from '../../../../components/FilterOption';
 import ReportTable from '../../../../components/table/ReportTable';
+import { fetchAllVehicleData } from '../../../../redux/vehicleReportSlice';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
-
-const dummyData = [
-  {
-    created_at: new Date().toISOString(),
-    vehicle_type: 'Vehicle',
-    vehicle_number: 'KA01AB1234',
-    Vehicle_Route: { route_number: 'R1', route_name: 'Main Route' },
-    vehicle_driver: { first_name: 'John', last_name: 'Doe', phone_number: '9876543210' },
-    source: 'Depot',
-    destination: 'Office',
-    employCount: 25,
-    top_speed: 60,
-    start_latitude: '12.9716',
-    start_longitude: '77.5946',
-    end_latitude: '12.9352',
-    end_longitude: '77.6245',
-    tripDistance: 15.2,
-    total_distance: 15.2,
-    start_odometer: 10000,
-    end_odometer: 10015.2,
-    total_running_time: '00:45:00',
-    total_ideal_time: '00:05:00',
-    total_parked_time: '00:10:00',
-    parking: 2,
-    offlineDuration: '00:00:00',
-  },
-  {
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    vehicle_type: 'Van',
-    vehicle_number: 'KA02CD5678',
-    Vehicle_Route: { route_number: 'R2', route_name: 'Secondary Route' },
-    vehicle_driver: { first_name: 'Jane', last_name: 'Smith', phone_number: '9123456780' },
-    source: 'Warehouse',
-    destination: 'Factory',
-    employCount: 10,
-    top_speed: 50,
-    start_latitude: '12.9718',
-    start_longitude: '77.5948',
-    end_latitude: '12.9354',
-    end_longitude: '77.6247',
-    tripDistance: 8.5,
-    total_distance: 8.5,
-    start_odometer: 20000,
-    end_odometer: 20008.5,
-    total_running_time: '00:30:00',
-    total_ideal_time: '00:02:00',
-    total_parked_time: '00:05:00',
-    parking: 1,
-    offlineDuration: '00:01:00',
-  },
-];
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
+import autoTable from 'jspdf-autotable';
 
 const formatDateTime = (date) => moment(date).format('YYYY-MM-DD HH:mm:ss');
+
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-IN');
+};
+
+const interValOptions = [
+  { label: '1M', value: '1' },
+  { label: '5M', value: '5' },
+  { label: '10M', value: '10' },
+  { label: '25M', value: '25' },
+];
 
 const columns = [
   { key: 'created_at', header: 'Date Time', render: (_ignored, row) => formatDateTime(row?.created_at) },
@@ -128,10 +96,162 @@ function Movement() {
   }, [dispatch, page, limit]);
 
   // const tableData = vehicleActivityData?.data?.length ? vehicleActivityData.data : dummyData;
-  const totalCount = vehicleActivityData?.pagination?.total || dummyData.length;
+  const totalCount = vehicleActivityData?.pagination?.total;
+
+  const company_id = localStorage.getItem('company_id');
+
+  const { allVehicledata } = useSelector((state) => state?.vehicleReport);
+  const [filterData, setFilterData] = useState({ bus: '', interval: '', fromDate: '', toDate: '' });
+  const [filteredData, setFilteredData] = useState([]);
+
+  const buses =
+    allVehicledata?.data?.map((vehicle, index) => ({
+      label: vehicle.vehicle_name || vehicle.vehicle_number,
+      value: vehicle.id,
+    })) || [];
+
+  useEffect(() => {
+    if (company_id) {
+      const today = moment().format('YYYY-MM-DD');
+      dispatch(fetchAllVehicleData({ company_id }));
+      dispatch(fetchVehicleActivityData({ company_id, vehicle_id: '', from: today, to: today })).then((res) => {
+        if (res?.payload?.status === 200) {
+          setFilteredData(res?.payload?.data || []);
+        }
+      });
+    }
+  }, [dispatch, company_id]);
+
+  const handleExportExcel = () => {
+    const exportData = filteredData.map((row) => ({
+      'Date & Time': formatDateTime(row?.created_at),
+      'Vehicle Type': row?.vehicle_type || '',
+      'Vehicle Number': row?.vehicle_number || '',
+      'Route Details': row?.Vehicle_Route?.route_number || row?.Vehicle_Route?.route_name || '',
+      'Driver Name': `${row?.vehicle_driver?.first_name || ''} ${row?.vehicle_driver?.last_name || ''}`.trim(),
+      'Driver Contact Number': row?.vehicle_driver?.phone_number || '',
+      Source: row?.source || '',
+      Destination: row?.destination || '',
+      'Employee Count': row?.employCount || '',
+      Speed: row?.top_speed || '',
+      'Start Lat-Long': `${row?.start_latitude || ''} - ${row?.start_longitude || ''}`,
+      'End Lat-Long': `${row?.end_latitude || ''} - ${row?.end_longitude || ''}`,
+      'Trip Distance': row?.tripDistance || '',
+      'Covered Distance': row?.total_distance || '',
+      'Start Odometer': row?.start_odometer || '',
+      'End Odometer': row?.end_odometer || '',
+      'Total Distance': row?.total_distance || '',
+      'Top Speed': row?.top_speed || '',
+      'Total Running Duration': row?.total_running_time || '',
+      'Total Idle Duration': row?.total_ideal_time || '',
+      'Total Parked Duration': row?.total_parked_time || '',
+      'No. of Parking': row?.parking || '',
+      'Total Offline Duration': row?.offlineDuration || '',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    worksheet['!cols'] = new Array(Object.keys(exportData[0] || {}).length).fill({ wch: 28 });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Movement Report');
+
+    XLSX.writeFile(workbook, 'movement-report.xlsx');
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+
+    const headers = [
+      [
+        'Date & Time',
+        'Vehicle Type',
+        'Vehicle Number',
+        'Route Details',
+        'Driver Name',
+        'Driver Contact Number',
+        'Source',
+        'Destination',
+        'Employee Count',
+        'Speed',
+        'Start Lat-Long',
+        'End Lat-Long',
+        'Trip Distance',
+        'Covered Distance',
+        'Start Odometer',
+        'End Odometer',
+        'Total Distance',
+        'Top Speed',
+        'Total Running Duration',
+        'Total Idle Duration',
+        'Total Parked Duration',
+        'No. of Parking',
+        'Total Offline Duration',
+      ],
+    ];
+
+    const rows = filteredData.map((row) => [
+      formatDateTime(row?.created_at),
+      row?.vehicle_type || '',
+      row?.vehicle_number || '',
+      row?.Vehicle_Route?.route_number || row?.Vehicle_Route?.route_name || '',
+      `${row?.vehicle_driver?.first_name || ''} ${row?.vehicle_driver?.last_name || ''}`.trim(),
+      row?.vehicle_driver?.phone_number || '',
+      row?.source || '',
+      row?.destination || '',
+      row?.employCount || '',
+      row?.top_speed || '',
+      `${row?.start_latitude || ''} - ${row?.start_longitude || ''}`,
+      `${row?.end_latitude || ''} - ${row?.end_longitude || ''}`,
+      row?.tripDistance || '',
+      row?.total_distance || '',
+      row?.start_odometer || '',
+      row?.end_odometer || '',
+      row?.total_distance || '',
+      row?.top_speed || '',
+      row?.total_running_time || '',
+      row?.total_ideal_time || '',
+      row?.total_parked_time || '',
+      row?.parking || '',
+      row?.offlineDuration || '',
+    ]);
+
+    autoTable(doc, {
+      head: headers,
+      body: rows,
+      styles: { fontSize: 7 },
+      headStyles: { fillColor: [22, 160, 133] },
+      startY: 20,
+      margin: { left: 5, right: 5 },
+    });
+
+    doc.save('movement-report.pdf');
+  };
+
+  const handleFormSubmit = (event) => {
+    event.preventDefault();
+    const payload = {
+      company_id,
+      //vehicle_id: filterData.bus,
+      vehicle_id: 'cmawix9lz000dui9oehg6rd8m',
+      from: moment(filterData.fromDate).format('YYYY-MM-DD'),
+      to: moment(filterData.toDate).format('YYYY-MM-DD'),
+    };
+    dispatch(fetchVehicleActivityData(payload)).then((res) => {
+      if (res?.payload?.status == 200) {
+        toast.success(res?.payload?.message);
+        setFilteredData(res?.payload?.data);
+      } else {
+        toast.error(res?.payload?.message);
+      }
+    });
+  };
+
+  const handleFormReset = () => {
+    setFilterData({ bus: '', interval: '', fromDate: '', toDate: '' });
+  };
 
   const handleView = (row) => {
     navigate('/report/movement/view', { state: row });
+    console.log('Viewing data...', row);
   };
 
   return (
@@ -140,9 +260,19 @@ function Movement() {
       <div className='flex justify-between items-center'>
         <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Movement Report</h1>
       </div>
+      <FilterOption
+        handleExport={handleExportExcel}
+        handleExportPDF={handleExportPDF}
+        handleFormSubmit={handleFormSubmit}
+        filterData={filterData}
+        setFilterData={setFilterData}
+        handleFormReset={handleFormReset}
+        buses={buses}
+        interValOptions={interValOptions}
+      />
       <ReportTable
         columns={columns}
-        data={dummyData}
+        data={filteredData}
         page={page}
         setPage={setPage}
         limit={limit}
