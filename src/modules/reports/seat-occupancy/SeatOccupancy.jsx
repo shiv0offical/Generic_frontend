@@ -56,30 +56,11 @@ function SeatOccupancy() {
 
   const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
 
-  const routeOptions = Array.isArray(vehicleRoutes)
-    ? vehicleRoutes.map((route) => {
-        let routeNumber = 'N/A';
-        let routeName = 'N/A';
-
-        if (route?.route_number) {
-          routeNumber = route.route_number;
-        }
-        // Check if it exists in the first employee's vehicleRoute
-        else if (route?.Employee?.[0]?.vehicleRoute?.route_number) {
-          routeNumber = route.Employee[0].vehicleRoute.route_number;
-        }
-
-        // Get route name
-        if (route?.name) {
-          routeName = route.name;
-        } else if (route?.Employee?.[0]?.vehicleRoute?.name) {
-          routeName = route.Employee[0].vehicleRoute.name;
-        }
-
-        return {
-          label: `Route ${routeNumber} - ${routeName}`,
-          value: route.id,
-        };
+  const routeOptions = Array.isArray(vehicleRoutes?.routes)
+    ? vehicleRoutes.routes.map((route) => {
+        const vehicleNumber = route?.vehicle?.vehicle_number || route?.route_number || 'N/A';
+        const routeName = route?.name || 'N/A';
+        return { label: `Route ${vehicleNumber} - ${routeName}`, value: route?.id };
       })
     : [];
 

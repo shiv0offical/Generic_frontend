@@ -8,10 +8,15 @@ import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { toast } from 'react-toastify';
 
 const columns = [
+  { key: 'date', header: 'Date' },
+  { key: 'vehicleNumber', header: 'Vehicle Number' },
+  { key: 'routeDetails', header: 'Route Details' },
+  { key: 'driverName', header: 'Driver Name' },
+  { key: 'driverNumber', header: 'Driver Number' },
   { key: 'employeeName', header: 'Employee Name' },
-  { key: 'givenRating', header: 'Given Rating' },
-  { key: 'review', header: 'Review' },
-  { key: 'dateTime', header: 'Date Time' },
+  { key: 'employeeId', header: 'Employee Id' },
+  { key: 'givenScore', header: 'Given Score' },
+  { key: 'feedback', header: 'Feedback' },
 ];
 
 function Feedback() {
@@ -31,39 +36,27 @@ function Feedback() {
   }, [dispatch, company_id]);
   const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
 
-  const routeOptions = Array.isArray(vehicleRoutes)
-    ? vehicleRoutes.map((route) => {
-        let routeNumber = 'N/A';
-        let routeName = 'N/A';
-
-        if (route?.route_number) routeNumber = route.route_number;
-        // Check if it exists in the first employee's vehicleRoute
-        else if (route?.Employee?.[0]?.vehicleRoute?.route_number) {
-          routeNumber = route.Employee[0].vehicleRoute.route_number;
-        }
-
-        // Get route name
-        if (route?.name) {
-          routeName = route.name;
-        } else if (route?.Employee?.[0]?.vehicleRoute?.name) {
-          routeName = route.Employee[0].vehicleRoute.name;
-        }
-
-        return {
-          label: `Route ${routeNumber} - ${routeName}`,
-          value: route?.id,
-        };
+  const routeOptions = Array.isArray(vehicleRoutes?.routes)
+    ? vehicleRoutes.routes.map((route) => {
+        const vehicleNumber = route?.vehicle?.vehicle_number || route?.route_number || 'N/A';
+        const routeName = route?.name || 'N/A';
+        return { label: `Route ${vehicleNumber} - ${routeName}`, value: route?.id };
       })
     : [];
 
   const tableData = Array.isArray(feedbackReportData?.feedbacks)
     ? feedbackReportData.feedbacks.map((item) => ({
+        date: item.created_at ? moment(item.created_at).format('YYYY-MM-DD HH:mm:ss') : '',
+        vehicleNumber: item.vehicle?.vehicle_number || '',
+        routeDetails: item.route?.name || '',
+        driverName: item.driver ? [item.driver.first_name, item.driver.last_name].filter(Boolean).join(' ') : '',
+        driverNumber: item.driver?.phone_number || '',
         employeeName: item.employee
           ? [item.employee.first_name, item.employee.last_name].filter(Boolean).join(' ')
           : '',
-        givenRating: typeof item.rating === 'number' ? item.rating.toFixed(1) : '',
-        review: item.message || '',
-        dateTime: item.created_at ? moment(item.created_at).format('YYYY-MM-DD hh:mm A') : '',
+        employeeId: item.employee?.employee_id || '',
+        givenScore: typeof item.rating === 'number' ? item.rating.toFixed(1) : '',
+        feedback: item.message || '',
       }))
     : [];
 

@@ -7,35 +7,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import ReportTable from '../../../../components/table/ReportTable';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 
-const dummyData = [
-  {
-    created_at: new Date().toISOString(),
-    vehicle_type: 'Vehicle',
-    vehicle_number: 'KA01AB1234',
-    Vehicle_Route: { route_number: 'R1', route_name: 'Main Route' },
-    vehicle_driver: { first_name: 'John', last_name: 'Doe', phone_number: '9876543210' },
-    total_ideal_time: '00:05:00',
-    max_offline_duration: '00:03:00',
-    noOfIdle: 2,
-  },
-  {
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    vehicle_type: 'Van',
-    vehicle_number: 'KA02CD5678',
-    Vehicle_Route: { route_number: 'R2', route_name: 'Secondary Route' },
-    vehicle_driver: { first_name: 'Jane', last_name: 'Smith', phone_number: '9123456780' },
-    total_ideal_time: '00:02:00',
-    max_offline_duration: '00:01:00',
-    noOfIdle: 1,
-  },
-];
-
 const formatDateTime = (date) => moment(date).format('YYYY-MM-DD HH:mm:ss');
 
 const columns = [
-  { key: 'created_at', header: 'Date Time', render: (_ignored, row) => formatDateTime(row?.created_at) },
-  { key: 'vehicleType', header: 'Vehicle Type', render: (_ignored, row) => (row?.vehicle_type || '').trim() },
-  { key: 'vehicleNumber', header: 'Vehicle Number', render: (_ignored, row) => (row?.vehicle_number || '').trim() },
+  { key: 'created_at', header: 'Date & Time', render: (_ignored, row) => formatDateTime(row?.created_at) },
+  { key: 'vehicle_type', header: 'Vehicle Type', render: (_ignored, row) => (row?.vehicle_type || '').trim() },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (_ignored, row) => (row?.vehicle_number || '').trim() },
   {
     key: 'Vehicle_Route',
     header: 'Route Details',
@@ -52,23 +29,45 @@ const columns = [
   },
   {
     key: 'driverContact',
-    header: 'Driver Contact No',
+    header: 'Driver Contact Number',
     render: (_ignored, row) => row?.vehicle_driver?.phone_number || '',
   },
-  { key: 'total_ideal_time', header: 'Total Idle Duration', render: (_ignored, row) => row.total_ideal_time || '' },
   {
-    key: 'max_offline_duration',
-    header: 'Max Idle Duration',
-    render: (_ignored, row) => row.max_offline_duration || '',
+    key: 'start_time',
+    header: 'Start Time',
+    render: (_ignored, row) => (row?.start_time ? formatDateTime(row.start_time) : ''),
   },
-  { key: 'noOfIdle', header: 'No. of Idle', render: (_ignored, row) => row.noOfIdle || '' },
+  {
+    key: 'end_time',
+    header: 'End Time',
+    render: (_ignored, row) => (row?.end_time ? formatDateTime(row.end_time) : ''),
+  },
+  { key: 'duration', header: 'Duration', render: (_ignored, row) => row?.duration || '' },
+  { key: 'lat_long', header: 'Lat-Long', render: (_ignored, row) => row?.lat_long || '' },
+  {
+    key: 'gmap',
+    header: 'G-Map',
+    render: (_ignored, row) =>
+      row?.lat_long ? (
+        <a
+          href={`https://maps.google.com/?q=${row.lat_long}`}
+          target='_blank'
+          rel='noopener noreferrer'
+          style={{ color: '#1976d2', textDecoration: 'underline' }}
+          onClick={(e) => e.stopPropagation()}>
+          View
+        </a>
+      ) : (
+        ''
+      ),
+  },
 ];
 
 function Idle() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { vehicleActivityData, loading, error } = useSelector((state) => state?.vehicleActivity || {});
+  const { vehicleActivityData } = useSelector((state) => state?.vehicleActivity || {});
 
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -77,8 +76,8 @@ function Idle() {
     dispatch(fetchVehicleActivityData({ page: page + 1 || page, limit }));
   }, [dispatch, page, limit]);
 
-  // const tableData = vehicleActivityData?.data?.length ? vehicleActivityData.data : dummyData;
-  const totalCount = vehicleActivityData?.pagination?.total || dummyData.length;
+  const tableData = vehicleActivityData?.data || [];
+  const totalCount = vehicleActivityData?.pagination?.total || 0;
 
   const handleView = (row) => {
     navigate('/report/idle/view', { state: row });
@@ -92,7 +91,7 @@ function Idle() {
       </div>
       <ReportTable
         columns={columns}
-        data={dummyData}
+        data={tableData}
         page={page}
         setPage={setPage}
         limit={limit}

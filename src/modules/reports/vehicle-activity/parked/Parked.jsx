@@ -41,55 +41,16 @@ const columns = [
   },
   {
     key: 'driverContact',
-    header: 'Driver Contact No',
+    header: 'Driver Contact Number',
     render: (_ignored, row) => row.vehicle_driver?.phone_number || '',
   },
+  { key: 'total_parked_time', header: 'Total Parked Duration', render: (_ignored, row) => row.total_parked_time || '' },
   {
-    key: 'start_time',
-    header: 'Start Time',
-    render: (_ignored, row) => formatDate(row.start_time) || '',
+    key: 'max_parked_duration',
+    header: 'Max Parked Duration',
+    render: (_ignored, row) => row.max_parked_duration || '',
   },
-  {
-    key: 'end_time',
-    header: 'End Time',
-    render: (_ignored, row) => formatDate(row.end_time) || '',
-  },
-
-  {
-    key: 'total_parked_time',
-    header: 'Total Parked Duration',
-    render: (_ignored, row) => row.total_parked_time || '',
-  },
-  {
-    key: 'lastVehicleData',
-    header: 'Lat-Long',
-    render: (_ignored, row) => {
-      const lat = row?.lastVehicleData?.latitude || '';
-      const long = row?.lastVehicleData?.longitude || '';
-      return `${lat} - ${long}`;
-    },
-  },
-  {
-    key: 'location',
-    header: 'Nearest Location',
-    render: (_ignored, row) => row.loaction || '',
-  },
-  {
-    key: 'lastVehicleData',
-    header: 'Google-Map',
-    render: (_ignored, row) => {
-      const lat = row?.lastVehicleData?.latitude;
-      const lng = row?.lastVehicleData?.longitude;
-
-      if (!lat || !lng) return '';
-      const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-      return (
-        <a href={mapUrl} target='_blank' rel='noopener noreferrer' className='text-blue-600 underline'>
-          Google-Map
-        </a>
-      );
-    },
-  },
+  { key: 'no_of_parking', header: 'No of Parking', render: (_ignored, row) => row.no_of_parking || '' },
 ];
 
 const interValOptions = [

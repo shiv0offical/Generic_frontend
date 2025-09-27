@@ -419,7 +419,7 @@ function FilterOption({
               </>
             )}
 
-            {busRouteNo.length > 0 && (
+            {busRouteNo && (
               <Autocomplete
                 multiple
                 disablePortal

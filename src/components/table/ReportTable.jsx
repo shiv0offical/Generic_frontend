@@ -3,20 +3,32 @@ import CommonSearch from '../CommonSearch';
 import { Table, TableBody, TableCell, TableContainer, TableHead } from '@mui/material';
 import { TableRow, TableSortLabel, TablePagination, Paper, CircularProgress } from '@mui/material';
 
-const headerCellSx = {
+const getHeaderMinWidth = (header) => Math.max(80, Math.min(320, header.length * 9 + 24));
+
+const headerCellSx = (header) => ({
   fontWeight: 'bold',
   fontSize: '1rem',
-  p: '0.5rem 0.75rem',
+  px: 2,
+  py: 1.5,
   background: '#FAFAFA',
   borderBottom: '1px solid #e0e0e0',
   height: 40,
-};
+  whiteSpace: 'nowrap',
+  minWidth: getHeaderMinWidth(header),
+  maxWidth: 400,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+});
 const bodyCellSx = (isFirst) => ({
   fontWeight: isFirst ? 500 : 400,
   fontSize: '1rem',
-  p: '0.5rem 0.75rem',
+  px: 1.5,
+  py: 1,
   height: 36,
   verticalAlign: 'middle',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 });
 
 const ReportTable = ({
@@ -67,7 +79,7 @@ const ReportTable = ({
             <TableHead>
               <TableRow sx={{ height: 40 }}>
                 {columns.map((col) => (
-                  <TableCell key={col.key} align={col.align || 'left'} sx={headerCellSx}>
+                  <TableCell key={col.key} align={col.align || 'left'} sx={headerCellSx(col.header)}>
                     <TableSortLabel
                       active={orderBy === col.key}
                       direction={orderBy === col.key ? order : 'asc'}

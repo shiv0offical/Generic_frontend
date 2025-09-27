@@ -24,7 +24,7 @@ const columns = [
   { key: 'targetArrivalTime', header: 'Target Arrival Time' },
   { key: 'actualArrivalTime', header: 'Actual Arrival Time' },
   { key: 'latLong', header: 'Lat-Long' },
-  { key: 'gmap', header: 'Google-Map' },
+  { key: 'gmap', header: 'G-Map' },
 ];
 
 function VehicalArrivalTime() {
@@ -44,37 +44,15 @@ function VehicalArrivalTime() {
   }, [dispatch, company_id]);
 
   const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
-  const routeOptions = Array.isArray(vehicleRoutes)
-    ? vehicleRoutes.map((route) => {
-        let routeNumber = 'N/A';
-        let routeName = 'N/A';
-
-        if (route?.route_number) {
-          routeNumber = route.route_number;
-        }
-        // Check if it exists in the first employee's vehicleRoute
-        else if (route?.Employee?.[0]?.vehicleRoute?.route_number) {
-          routeNumber = route.Employee[0].vehicleRoute.route_number;
-        }
-
-        // Get route name
-        if (route?.name) {
-          routeName = route.name;
-        } else if (route?.Employee?.[0]?.vehicleRoute?.name) {
-          routeName = route.Employee[0].vehicleRoute.name;
-        }
-
-        return {
-          label: `Route ${routeNumber} - ${routeName}`,
-          value: route?.id,
-        };
+  const routeOptions = Array.isArray(vehicleRoutes?.routes)
+    ? vehicleRoutes.routes.map((route) => {
+        const vehicleNumber = route?.vehicle?.vehicle_number || route?.route_number || 'N/A';
+        const routeName = route?.name || 'N/A';
+        return { label: `Route ${vehicleNumber} - ${routeName}`, value: route?.id };
       })
     : [];
-  const [filterData, setFilterData] = useState({
-    busRoute: '',
-    fromDate: '',
-    toDate: '',
-  });
+
+  const [filterData, setFilterData] = useState({ busRoute: '', fromDate: '', toDate: '' });
   const navigate = useNavigate();
 
   const handleExport = () => {
@@ -91,7 +69,6 @@ function VehicalArrivalTime() {
       end_time: filterData.toDate,
     };
     dispatch(fetchVehicleArrivalData(payload)).then((res) => {
-      console.log(res, 'res');
       if (res?.payload?.status == 200) {
         toast.success(res?.payload?.message);
       } else {
@@ -122,7 +99,7 @@ function VehicalArrivalTime() {
                 target='_blank'
                 rel='noopener noreferrer'
                 className='text-blue-700'>
-                Google Map
+                G-Map
               </a>
             ) : (
               'N/A'

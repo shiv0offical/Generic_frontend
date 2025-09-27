@@ -14,30 +14,31 @@ const formatDate = (dateString) => {
 const columns = [
   { key: 'date', header: 'Date', render: (_ignored, row) => formatDate(row?.date) },
   { key: 'vehicleNo', header: 'Vehicle Number' },
-  { key: 'routeNo', header: 'Route Number' },
-  { key: 'route_name', header: 'Route Name' },
+  { key: 'routeDetails', header: 'Route Details' },
   { key: 'driverName', header: 'Driver Name' },
+  { key: 'driverNumber', header: 'Driver Number' },
   { key: 'employeeName', header: 'Employee Name' },
+  { key: 'employeeId', header: 'Employee ID' },
   { key: 'plant', header: 'Plant' },
   { key: 'department', header: 'Department' },
   {
-    key: 'location',
-    header: 'Location',
+    key: 'latlong',
+    header: 'Lat-Long',
     render: (_i, row) => (row?.latitude && row?.longitude ? `${row.latitude}, ${row.longitude}` : ''),
   },
   {
     key: 'gmap',
-    header: 'Google-map',
+    header: 'G-Map',
     render: (value) =>
       value ? (
         <a href={value} target='_blank' className='text-blue-700' rel='noopener noreferrer'>
-          Google Map
+          G-Map
         </a>
       ) : (
         ''
       ),
   },
-  { key: 'issuedRaised', header: 'Issued Raised' },
+  { key: 'issuedRaised', header: 'Issue Raised' },
   { key: 'actionNote', header: 'Action Note' },
   { key: 'updated_at', header: 'Update Date' },
 ];
@@ -57,20 +58,21 @@ function EmergencyAlert() {
         const latitude = item.latitude ?? '';
         const longitude = item.longitude ?? '';
         return {
+          date: item.created_at ? moment(item.created_at).format('YYYY-MM-DD hh:mm A') : '',
           vehicleNo: item.vehicle_number || 'N/A',
-          routeNo: item.route_number || 'N/A',
-          route_name: item.name || '-',
+          routeDetails: item.route_number || '-',
           driverName: item.driver?.name || '-',
+          driverNumber: item.driver?.mobile || '0',
           employeeName: item.employe?.name || '-',
+          employeeId: item.employe?.employee_id || '-',
           plant: item.plant_name || '',
           department: item.department_name || '-',
           latitude,
           longitude,
-          location: latitude && longitude ? `${latitude}, ${longitude}` : '',
+          latlong: latitude && longitude ? `${latitude}, ${longitude}` : '',
           gmap: latitude && longitude ? `https://maps.google.com/?q=${latitude},${longitude}` : '',
           issuedRaised: item.title || '',
           actionNote: item.action_taken || '',
-          date: item.created_at ? moment(item.created_at).format('YYYY-MM-DD hh:mm A') : '',
           updated_at: item.updated_at ? moment(item.updated_at).format('YYYY-MM-DD hh:mm A') : '',
         };
       })

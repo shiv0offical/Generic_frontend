@@ -7,27 +7,15 @@ import ReportTable from '../../../components/table/ReportTable';
 import { fetchAllVehicleData } from '../../../redux/vehicleReportSlice';
 import { fetchGeofenceType, vehicleGeofenceReport } from '../../../redux/geofenceSlice';
 
-const formatDate = (v) => (v ? moment(v).format('YYYY-MM-DD HH:mm:ss') : '-');
-const formatPosition = (v) => {
-  if (typeof v === 'string' && v.startsWith('{') && v.endsWith('}')) {
-    const [lng, lat] = v.replace(/[{}]/g, '').split(',').map(Number);
-    if (!isNaN(lat) && !isNaN(lng)) return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  }
-  return '-';
-};
-
 const columns = [
-  { key: 'created_at', header: 'Date', render: formatDate },
-  { key: 'vehicle_number', header: 'Vehicle Number' },
-  { key: 'vehicle_name', header: 'Vehicle Name' },
-  { key: 'geofence_name', header: 'GeoFence Name', render: (v) => v ?? '-' },
-  { key: 'geofence_type', header: 'GeoFence Type', render: (v) => v ?? '-' },
-  { key: 'geofence_location', header: 'GeoFence Location', render: (v) => v ?? '-' },
-  { key: 'entry_time', header: 'Entry Time', render: formatDate },
-  { key: 'entry_position', header: 'Entry Position', render: formatPosition },
-  { key: 'exit_time', header: 'Exit Time', render: formatDate },
-  { key: 'exit_position', header: 'Exit Position', render: formatPosition },
-  { key: 'duration_in_fence', header: 'Duration in Fence', render: (v) => v ?? '-' },
+  { key: 'created_at', header: 'Date', render: (v) => (v ? moment(v).format('YYYY-MM-DD HH:mm:ss') : '-') },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (v) => v ?? '-' },
+  { key: 'route_details', header: 'Route Details', render: (v) => v ?? '-' },
+  { key: 'driver_name', header: 'Driver Name', render: (v) => v ?? '-' },
+  { key: 'driver_number', header: 'Driver Number', render: (v) => v ?? '-' },
+  { key: 'geofence_name', header: 'Geofence Name', render: (v) => v ?? '-' },
+  { key: 'geofence_type', header: 'Geofence Type', render: (v) => v ?? '-' },
+  { key: 'no_of_visit', header: 'No. Of Visit', render: (v) => v ?? '-' },
 ];
 
 function GeofencEntryExit() {
@@ -49,7 +37,18 @@ function GeofencEntryExit() {
     totalCount = GeoFenceVehicleReport.pagination?.total ?? data.length;
   }
 
-  data = data.map((item, i) => ({ ...item, id: item.id || item._id || i + 1 }));
+  data = data.map((item, i) => ({
+    ...item,
+    id: item.id || item._id || i + 1,
+    created_at: item.created_at,
+    vehicle_number: item.vehicle_number,
+    route_details: item.route_details ?? '-',
+    driver_name: item.driver_name ?? '-',
+    driver_number: item.driver_number ?? '-',
+    geofence_name: item.geofence_name ?? '-',
+    geofence_type: item.geofence_type ?? '-',
+    no_of_visit: item.no_of_visit ?? '-',
+  }));
 
   useEffect(() => {
     const company_id = localStorage.getItem('company_id');
@@ -65,27 +64,12 @@ function GeofencEntryExit() {
   const { allVehicledata } = useSelector((state) => state?.vehicleReport);
 
   const buses = allVehicledata?.data?.map((vehicle) => ({ label: vehicle.vehicle_name, value: vehicle.id })) || [];
-
   const geofenceTypes = geofenceType?.data?.map((type) => ({ label: type.name, value: type.id })) || [];
-
-  const transformedData = GeoFenceVehicleReport?.data?.map((item) => ({
-    date: moment(item.created_at).format('YYYY-MM-DD HH:mm:ss'),
-    fenceEntryTime: item.entry_time ? moment(item.entry_time).format('HH:mm:ss') : '-',
-    entryPosition: item.entry_position?.length ? `${item.entry_position[1]}, ${item.entry_position[0]}` : '-',
-    durationInFence: item.duration_in_fence ?? '-',
-    fenceExitTime: item.exit_time ? moment(item.exit_time).format('HH:mm:ss') : '-',
-    exitPosition: item.exit_position?.length ? `${item.exit_position[1]}, ${item.exit_position[0]}` : '-',
-  }));
 
   const [selectedRows, setSelectedRows] = useState([]);
 
-  // Callback to receive selected rows from table
-  const handleSelectRows = (rows) => {
-    setSelectedRows(rows);
-  };
-
   const handleSelectAllRows = () => {
-    setSelectedRows(transformedData);
+    setSelectedRows(data);
   };
 
   const handleExport = () => {

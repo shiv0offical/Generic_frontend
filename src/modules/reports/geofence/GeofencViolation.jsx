@@ -13,24 +13,21 @@ const columns = [
     header: 'Date',
     render: (value) => (value ? moment(value).format('YYYY-MM-DD hh:mm:ss A') : '-'),
   },
-  { key: 'vechicleNumber', header: 'Vehicle Number' },
-  { key: 'routeDetails', header: 'Routes Details' },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (v, row) => row?.vehicle?.vehicle_number || '-' },
+  { key: 'route_details', header: 'Route Details', render: (v, row) => row?.route_details || '-' },
   {
-    key: 'vehicle_driver',
+    key: 'driver_name',
     header: 'Driver Name',
-    render: (_value, row) => {
+    render: (_v, row) => {
       const first = row?.vehicle?.vehicle_driver?.first_name || '';
       const last = row?.vehicle?.vehicle_driver?.last_name || '';
       return `${first} ${last}`.trim() || '-';
     },
   },
   {
-    key: 'vehicle_driver',
+    key: 'driver_number',
     header: 'Driver Number',
-    render: (_value, row) => {
-      const phone = row?.vehicle?.vehicle_driver?.phone_number || '';
-      return phone || '-';
-    },
+    render: (_v, row) => row?.vehicle?.vehicle_driver?.phone_number || '-',
   },
   {
     key: 'entry_time',
@@ -38,14 +35,59 @@ const columns = [
     render: (value) => (value ? moment(value).format('YYYY-MM-DD hh:mm:ss A') : '-'),
   },
   {
+    key: 'entry_lat_long',
+    header: 'Lat-Long',
+    render: (_v, row) =>
+      row?.entry_latitude && row?.entry_longitude ? `${row.entry_latitude}, ${row.entry_longitude}` : '-',
+  },
+  {
+    key: 'entry_gmap',
+    header: 'G-Map',
+    render: (_v, row) =>
+      row?.entry_latitude && row?.entry_longitude ? (
+        <a
+          href={`https://maps.google.com/?q=${row.entry_latitude},${row.entry_longitude}`}
+          target='_blank'
+          rel='noopener noreferrer'
+          style={{ color: '#2563eb', textDecoration: 'underline' }}>
+          View
+        </a>
+      ) : (
+        '-'
+      ),
+  },
+  {
     key: 'exit_time',
     header: 'Violation End Time',
     render: (value) => (value ? moment(value).format('YYYY-MM-DD hh:mm:ss A') : '-'),
   },
   {
-    key: 'total_trip_distance',
+    key: 'exit_lat_long',
+    header: 'Lat-Long',
+    render: (_v, row) =>
+      row?.exit_latitude && row?.exit_longitude ? `${row.exit_latitude}, ${row.exit_longitude}` : '-',
+  },
+  {
+    key: 'exit_gmap',
+    header: 'G-Map',
+    render: (_v, row) =>
+      row?.exit_latitude && row?.exit_longitude ? (
+        <a
+          href={`https://maps.google.com/?q=${row.exit_latitude},${row.exit_longitude}`}
+          target='_blank'
+          rel='noopener noreferrer'
+          style={{ color: '#2563eb', textDecoration: 'underline' }}>
+          View
+        </a>
+      ) : (
+        '-'
+      ),
+  },
+  {
+    key: 'violation_distance',
     header: 'Violation Distance',
-    render: (value) => (value !== undefined && value !== null ? value : '-'),
+    render: (v, row) =>
+      row?.total_trip_distance !== undefined && row?.total_trip_distance !== null ? row.total_trip_distance : '-',
   },
 ];
 
@@ -99,12 +141,31 @@ function GeofencViolation() {
       value: item.id,
     })) || [];
 
+  // Prepare reportRows for export with only the columns in the table
   const reportRows =
-    GeoToGeoReportData?.data?.tripCount?.res?.map((item) => ({
-      ...item,
-      duration: moment.utc(moment(item.exit_time).diff(moment(item.entry_time))).format('HH:mm'),
-      tripCount: GeoToGeoReportData?.data?.tripCount?.tripCount ?? '-',
-      total_trip_distance: GeoToGeoReportData?.data?.tripCount?.total_trip_distance ?? '-',
+    data.map((item) => ({
+      created_at: item.created_at,
+      vehicle_number: item?.vehicle?.vehicle_number || '-',
+      route_details: item?.route_details || '-',
+      driver_name:
+        `${item?.vehicle?.vehicle_driver?.first_name || ''} ${item?.vehicle?.vehicle_driver?.last_name || ''}`.trim() ||
+        '-',
+      driver_number: item?.vehicle?.vehicle_driver?.phone_number || '-',
+      entry_time: item.entry_time,
+      entry_lat_long:
+        item.entry_latitude && item.entry_longitude ? `${item.entry_latitude}, ${item.entry_longitude}` : '-',
+      entry_gmap:
+        item.entry_latitude && item.entry_longitude
+          ? `https://maps.google.com/?q=${item.entry_latitude},${item.entry_longitude}`
+          : '-',
+      exit_time: item.exit_time,
+      exit_lat_long: item.exit_latitude && item.exit_longitude ? `${item.exit_latitude}, ${item.exit_longitude}` : '-',
+      exit_gmap:
+        item.exit_latitude && item.exit_longitude
+          ? `https://maps.google.com/?q=${item.exit_latitude},${item.exit_longitude}`
+          : '-',
+      violation_distance:
+        item.total_trip_distance !== undefined && item.total_trip_distance !== null ? item.total_trip_distance : '-',
     })) || [];
 
   const handleFormSubmit = async (event) => {
@@ -131,24 +192,52 @@ function GeofencViolation() {
   };
 
   const handleExport = (rows) => {
-    // Strong null and length check
+    // Only export the columns shown in the table
     if (!Array.isArray(rows) || rows.length === 0 || typeof rows[0] !== 'object') {
       alert('No data available to export.');
       return;
     }
 
-    const headers = Object.keys(rows[0]);
-    const csvRows = [];
+    const headers = [
+      'Date',
+      'Vehicle Number',
+      'Route Details',
+      'Driver Name',
+      'Driver Number',
+      'Violation Start Time',
+      'Lat-Long',
+      'G-Map',
+      'Violation End Time',
+      'Lat-Long',
+      'G-Map',
+      'Violation Distance',
+    ];
 
-    // Add header row
+    const keys = [
+      'created_at',
+      'vehicle_number',
+      'route_details',
+      'driver_name',
+      'driver_number',
+      'entry_time',
+      'entry_lat_long',
+      'entry_gmap',
+      'exit_time',
+      'exit_lat_long',
+      'exit_gmap',
+      'violation_distance',
+    ];
+
+    const csvRows = [];
     csvRows.push(headers.join(','));
 
-    // Add data rows
     for (const row of rows) {
-      const values = headers.map((header) => {
-        const val = row[header];
-        if (Array.isArray(val)) return `"${val.join(',')}"`;
-        return `"${val !== undefined && val !== null ? val : ''}"`;
+      const values = keys.map((key) => {
+        const val = row[key];
+        if (typeof val === 'string' && val.includes(',')) {
+          return `"${val}"`;
+        }
+        return val !== undefined && val !== null ? val : '';
       });
       csvRows.push(values.join(','));
     }
@@ -159,7 +248,7 @@ function GeofencViolation() {
 
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'geoToGeoFence_report.csv');
+    link.setAttribute('download', 'geofence_violation_report.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -171,7 +260,7 @@ function GeofencViolation() {
 
   return (
     <div className='w-full h-full p-2'>
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Geo-fence To Geo-fence Report</h1>
+      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Geo-fence Violation Report</h1>
       <FilterOption
         handleExport={() => handleExport(reportRows)}
         handleFormSubmit={handleFormSubmit}

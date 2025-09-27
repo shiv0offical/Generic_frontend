@@ -15,12 +15,6 @@ import autoTable from 'jspdf-autotable';
 
 const formatDateTime = (date) => moment(date).format('YYYY-MM-DD HH:mm:ss');
 
-const formatDate = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-IN');
-};
-
 const interValOptions = [
   { label: '1M', value: '1' },
   { label: '5M', value: '5' },
@@ -29,9 +23,9 @@ const interValOptions = [
 ];
 
 const columns = [
-  { key: 'created_at', header: 'Date Time', render: (_ignored, row) => formatDateTime(row?.created_at) },
-  { key: 'vehicleType', header: 'Vehicle Type', render: (_ignored, row) => (row?.vehicle_type || '').trim() },
-  { key: 'vehicleNumber', header: 'Vehicle Number', render: (_ignored, row) => (row?.vehicle_number || '').trim() },
+  { key: 'created_at', header: 'Date & Time', render: (_ignored, row) => formatDateTime(row?.created_at) },
+  { key: 'vehicle_type', header: 'Vehicle Type', render: (_ignored, row) => (row?.vehicle_type || '').trim() },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (_ignored, row) => (row?.vehicle_number || '').trim() },
   {
     key: 'Vehicle_Route',
     header: 'Route Details',
@@ -48,13 +42,13 @@ const columns = [
   },
   {
     key: 'driverContact',
-    header: 'Driver Contact No',
-    render: (_ignored, row) => row.vehicle_driver?.phone_number || '',
+    header: 'Driver Contact Number',
+    render: (_ignored, row) => row?.vehicle_driver?.phone_number || '',
   },
-  { key: 'source', header: 'Source', render: (_ignored, row) => row.source || '' },
-  { key: 'destination', header: 'Destination', render: (_ignored, row) => row.destination || '' },
-  { key: 'count', header: 'Employee Count', render: (_ignored, row) => row.employCount || '' },
-  { key: 'speed', header: 'Speed', render: (_ignored, row) => row.top_speed || '' },
+  { key: 'source', header: 'Source', render: (_ignored, row) => row?.source || '' },
+  { key: 'destination', header: 'Destination', render: (_ignored, row) => row?.destination || '' },
+  { key: 'employCount', header: 'Employee Count', render: (_ignored, row) => row?.employCount || '' },
+  { key: 'top_speed', header: 'Speed', render: (_ignored, row) => row?.top_speed || '' },
   {
     key: 'start_lat_long',
     header: 'Start Lat-Long',
@@ -65,17 +59,18 @@ const columns = [
     header: 'End Lat-Long',
     render: (_ignored, row) => `${row?.end_latitude || ''} - ${row?.end_longitude || ''}`,
   },
-  { key: 'tripDistance', header: 'Trip Distance', render: (_ignored, row) => row.tripDistance || '' },
-  { key: 'coveredDistance', header: 'Covered Distance', render: (_ignored, row) => row.total_distance || '' },
-  { key: 'start_odometer', header: 'Start Odometer', render: (_ignored, row) => row.start_odometer || '' },
-  { key: 'end_odometer', header: 'End Odometer', render: (_ignored, row) => row.end_odometer || '' },
-  { key: 'total_distance', header: 'Total Distance', render: (_ignored, row) => row.total_distance || '' },
-  { key: 'top_speed', header: 'Top Speed', render: (_ignored, row) => row.top_speed || '' },
+  { key: 'tripDistance', header: 'Trip Distance', render: (_ignored, row) => row?.tripDistance || '' },
+  { key: 'total_distance', header: 'Covered Distance', render: (_ignored, row) => row?.total_distance || '' },
+  { key: 'start_odometer', header: 'Start Odometer', render: (_ignored, row) => row?.start_odometer || '' },
+  { key: 'end_odometer', header: 'End Odometer', render: (_ignored, row) => row?.end_odometer || '' },
+  { key: 'total_distance_2', header: 'Total Distance', render: (_ignored, row) => row?.total_distance || '' },
+  { key: 'top_speed_2', header: 'Top Speed', render: (_ignored, row) => row?.top_speed || '' },
   {
     key: 'total_running_time',
     header: 'Total Running Duration',
-    render: (_ignored, row) => row.total_running_time || '',
+    render: (_ignored, row) => row?.total_running_time || '',
   },
+  { key: 'total_ideal_time', header: 'Total Idle Duration', render: (_ignored, row) => row?.total_ideal_time || '' },
   { key: 'total_ideal_time', header: 'Total Idle Duration', render: (_ignored, row) => row.total_ideal_time || '' },
   { key: 'total_parked_time', header: 'Total Parked Duration', render: (_ignored, row) => row.total_parked_time || '' },
   { key: 'parking', header: 'No. of Parking', render: (_ignored, row) => row.parking || '' },

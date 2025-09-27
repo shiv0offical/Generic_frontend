@@ -40,9 +40,9 @@ function formatDateTime(isoString) {
 }
 
 const columns = [
-  { key: 'created_at', header: 'Date Time', render: (_ignored, row) => formatDateTime(row?.created_at) },
-  { key: 'vehicleType', header: 'Vehicle Type', render: (_ignored, row) => (row?.vehicle_type || '').trim() },
-  { key: 'vehicleNumber', header: 'Vehicle Number', render: (_ignored, row) => (row?.vehicle_number || '').trim() },
+  { key: 'created_at', header: 'Date & Time', render: (_ignored, row) => formatDateTime(row?.created_at) },
+  { key: 'vehicle_type', header: 'Vehicle Type', render: (_ignored, row) => (row?.vehicle_type || '').trim() },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (_ignored, row) => (row?.vehicle_number || '').trim() },
   {
     key: 'Vehicle_Route',
     header: 'Route Details',
@@ -59,20 +59,53 @@ const columns = [
   },
   {
     key: 'driverContact',
-    header: 'Driver Contact No',
+    header: 'Driver Contact Number',
     render: (_ignored, row) => row?.vehicle_driver?.phone_number || '',
   },
   {
-    key: 'total_offline_duration',
-    header: 'Total Offline Duration',
-    render: (_ignored, row) => row?.total_offline_duration || '',
+    key: 'start_time',
+    header: 'Start Time',
+    render: (_ignored, row) => formatDateTime(row?.start_time),
   },
   {
-    key: 'max_offline_duration',
-    header: 'Max Offline Duration',
-    render: (_ignored, row) => row?.max_offline_duration || '',
+    key: 'end_time',
+    header: 'End Time',
+    render: (_ignored, row) => formatDateTime(row?.end_time),
   },
-  { key: 'noOffline', header: 'No. of Offline', render: (_ignored, row) => row?.noOffline || '' },
+  {
+    key: 'duration',
+    header: 'Duration',
+    render: (_ignored, row) => row?.duration || '',
+  },
+  {
+    key: 'lat_long',
+    header: 'Lat-Long',
+    render: (_ignored, row) => {
+      if (row?.latitude && row?.longitude) {
+        return `${row.latitude}, ${row.longitude}`;
+      }
+      return '';
+    },
+  },
+  {
+    key: 'gmap',
+    header: 'G-Map',
+    render: (_ignored, row) => {
+      if (row?.latitude && row?.longitude) {
+        const url = `https://maps.google.com/?q=${row.latitude},${row.longitude}`;
+        return (
+          <a
+            href={url}
+            target='_blank'
+            rel='noopener noreferrer'
+            style={{ color: '#1a73e8', textDecoration: 'underline' }}>
+            View
+          </a>
+        );
+      }
+      return '';
+    },
+  },
 ];
 
 function Offline() {
