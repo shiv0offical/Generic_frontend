@@ -1,11 +1,12 @@
 import moment from 'moment-timezone';
+import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../components/FilterOption';
+import CommonSearch from '../../../components/CommonSearch';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchFeedbackReport } from '../../../redux/feedBackReportSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
-import { toast } from 'react-toastify';
 
 const columns = [
   { key: 'date', header: 'Date' },
@@ -23,17 +24,15 @@ function Feedback() {
   const dispatch = useDispatch();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
+  const [searchQuery, setSearchQuery] = useState('');
+  const company_id = localStorage.getItem('company_id');
 
   const { feedbackReportData, loading, error } = useSelector((state) => state?.feedbackReport);
 
   useEffect(() => {
-    dispatch(fetchFeedbackReport({ page: page + 1, limit }));
-  }, [dispatch, page, limit]);
-
-  const company_id = localStorage.getItem('company_id');
-  useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id }));
-  }, [dispatch, company_id]);
+    dispatch(fetchFeedbackReport({ page: page + 1, limit, search: searchQuery }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+  }, [dispatch, page, limit, company_id, searchQuery]);
   const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
 
   const routeOptions = Array.isArray(vehicleRoutes?.routes)
@@ -54,17 +53,13 @@ function Feedback() {
         employeeName: item.employee
           ? [item.employee.first_name, item.employee.last_name].filter(Boolean).join(' ')
           : '',
-        employeeId: item.employee?.employee_id || '',
+        employeeId: item.employee_id || '',
         givenScore: typeof item.rating === 'number' ? item.rating.toFixed(1) : '',
         feedback: item.message || '',
       }))
     : [];
 
-  const [filterData, setFilterData] = useState({
-    busRoute: '',
-    fromDate: '',
-    toDate: '',
-  });
+  const [filterData, setFilterData] = useState({ busRoute: '', fromDate: '', toDate: '' });
 
   const handleExport = () => {
     // Add your export logic here
@@ -78,6 +73,7 @@ function Feedback() {
       route_id: filterData.busRoute,
       start: filterData.fromDate,
       end: filterData.toDate,
+      search: searchQuery,
     };
     dispatch(fetchFeedbackReport(payload)).then((res) => {
       if (res?.payload?.status == 200) {
@@ -89,25 +85,25 @@ function Feedback() {
   };
 
   const handleFormReset = () => {
-    setFilterData({
-      busRoute: '',
-      fromDate: '',
-      toDate: '',
-    });
+    setFilterData({ busRoute: '', fromDate: '', toDate: '' });
+    setSearchQuery('');
   };
 
   return (
     <div className='w-full h-full p-2'>
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>
-        Feedback Report (Total: {feedbackReportData?.pagination?.total || 0})
-      </h1>
+      <div className='flex justify-between mb-4'>
+        <h1 className='text-2xl font-bold text-[#07163d]'>
+          Feedback Report (Total: {feedbackReportData?.pagination?.total || 0})
+        </h1>
+        <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      </div>
       <FilterOption
         handleExport={handleExport}
         handleFormSubmit={handleFormSubmit}
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
-        busRoutes={routeOptions}
+        busRouteNo={routeOptions}
       />
       <ReportTable
         columns={columns}
