@@ -2,102 +2,77 @@ import L from 'leaflet';
 import 'leaflet-routing-machine';
 import { useMap } from 'react-leaflet';
 import car from '../../assets/logo.png';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 const RoutingMatching = ({ coordinates, speed, isPlaying }) => {
   const map = useMap();
-
-  const movingMarkerRef = useRef(null);
-  const intervalRef = useRef(null);
-  const routeCoordsRef = useRef([]);
-  const currentPositionRef = useRef(0);
-
-  const [routeReady, setRouteReady] = useState(false);
+  const markerRef = useRef();
+  const intervalRef = useRef();
+  const routeRef = useRef([]);
+  const posRef = useRef(0);
 
   useEffect(() => {
-    if (!coordinates || coordinates.length < 2 || !map) return;
-
-    if (routeReady) return;
-
-    const routingControl = L.Routing.control({
-      waypoints: coordinates.map((c) => L.latLng(c[0], c[1])),
+    if (!map || !coordinates?.length || coordinates.length < 2) return;
+    let routing = L.Routing.control({
+      waypoints: coordinates.map(([lat, lng]) => L.latLng(lat, lng)),
       routeWhileDragging: false,
       addWaypoints: false,
       createMarker: () => null,
     }).addTo(map);
 
-    const handleRoutesFound = (e) => {
-      const route = e.routes[0];
-      routeCoordsRef.current = route.coordinates;
-      setRouteReady(true);
+    const hidePanel = () => {
+      const el = document.querySelector('.leaflet-top.leaflet-right');
+      if (el) el.style.display = 'none';
     };
 
-    routingControl.on('routesfound', handleRoutesFound);
+    const onRoute = (e) => {
+      routeRef.current = e.routes[0]?.coordinates || [];
+      posRef.current = 0;
+      if (markerRef.current) {
+        map.removeLayer(markerRef.current);
+        markerRef.current = null;
+      }
+    };
 
-    // Hide routing panel
-    const controlContainer = document.querySelector('.leaflet-top.leaflet-right');
-    if (controlContainer) controlContainer.style.display = 'none';
+    routing.on('routesfound', onRoute);
+    hidePanel();
 
     return () => {
-      routingControl.off('routesfound', handleRoutesFound);
-
-      if (movingMarkerRef.current) {
-        map.removeLayer(movingMarkerRef.current);
-        movingMarkerRef.current = null;
-      }
+      routing.off('routesfound', onRoute);
+      map.removeControl(routing);
+      if (markerRef.current) map.removeLayer(markerRef.current);
       clearInterval(intervalRef.current);
     };
-  }, [coordinates, map]);
+  }, [map, coordinates]);
 
   useEffect(() => {
-    if (!routeReady || routeCoordsRef.current.length === 0) return;
-
-    const customIcon = L.icon({
-      iconUrl: car,
-      iconSize: [25, 30],
-    });
-
-    if (movingMarkerRef.current === null) {
-      const marker = L.marker(routeCoordsRef.current[currentPositionRef.current], { icon: customIcon })
+    if (!routeRef.current.length) return;
+    if (markerRef.current == null) {
+      markerRef.current = L.marker(routeRef.current[0], {
+        icon: L.icon({ iconUrl: car, iconSize: [25, 30] }),
+      })
         .addTo(map)
         .bindPopup('', { closeButton: false, autoClose: false })
         .openPopup();
-      movingMarkerRef.current = marker;
     }
-
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    clearInterval(intervalRef.current);
 
     if (isPlaying) {
-      // If the marker reached the end, reset it
-      if (currentPositionRef.current >= routeCoordsRef.current.length) {
-        currentPositionRef.current = 0;
-        movingMarkerRef.current.setLatLng(routeCoordsRef.current[0]);
-      }
-
-      const delay = Math.max(10, 1000 / speed);
+      if (posRef.current >= routeRef.current.length) posRef.current = 0;
+      const delay = Math.max(10, 1000 / (speed || 1));
       intervalRef.current = setInterval(() => {
-        const coords = routeCoordsRef.current;
-        if (currentPositionRef.current >= coords.length) {
-          clearInterval(intervalRef.current);
-          return;
-        }
-        const currentLatLng = coords[currentPositionRef.current];
-        movingMarkerRef.current.setLatLng(coords[currentPositionRef.current]);
-
-        // Update tooltip with current lat/lng
-        movingMarkerRef.current.setPopupContent(`
-          <div>
-            <strong>Lat:</strong> ${currentLatLng.lat.toFixed(5)}<br/>
-            <strong>Lng:</strong> ${currentLatLng.lng.toFixed(5)}
-          </div>
-        `);
-
-        currentPositionRef.current++;
+        const coords = routeRef.current;
+        if (posRef.current >= coords.length) return clearInterval(intervalRef.current);
+        const { lat, lng } = coords[posRef.current];
+        markerRef.current.setLatLng([lat, lng]);
+        markerRef.current.setPopupContent(
+          `<div><strong>Lat:</strong> ${lat.toFixed(5)}<br/><strong>Lng:</strong> ${lng.toFixed(5)}</div>`
+        );
+        posRef.current++;
       }, delay);
     }
-
     return () => clearInterval(intervalRef.current);
-  }, [isPlaying, speed, routeReady]);
+  }, [isPlaying, speed, map]);
 
   return null;
 };

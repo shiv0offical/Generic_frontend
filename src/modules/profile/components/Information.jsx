@@ -1,91 +1,74 @@
 import { TextField } from '@mui/material';
-import { useState } from 'react';
+import { useFormik } from 'formik';
 
-function Information() {
-  const [formData, setFormData] = useState({
-    firstName: 'One',
-    lastName: 'Touch',
-    email: 'company@mailinator.com',
-    phoneNumber: '1234567890',
-    file: null,
+export default function Information() {
+  const formik = useFormik({
+    initialValues: {
+      firstName: 'One',
+      lastName: 'Touch',
+      email: 'company@mailinator.com',
+      phoneNumber: '1234567890',
+      file: null,
+    },
+    onSubmit: (values) => {
+      console.log(values);
+    },
   });
 
-  const inputChangeHandler = (event) => {
-    setFormData((prev) => ({
-      ...prev,
-      [event.target.name]: event.target.value,
-    }));
-  };
-
-  const formSubmitHandle = (event) => {
-    event.preventDefault();
-    console.log(formData);
-  };
-
   return (
-    <div className='mt-3'>
-      <form onSubmit={formSubmitHandle}>
-        <div className='grid grid-cols-2 gap-4'>
-          <TextField
-            label='First Name'
-            variant='outlined'
-            size='small'
-            name='firstName'
-            value={formData.firstName}
-            onChange={inputChangeHandler}
-            fullWidth
-            sx={{ mb: 3 }}
-          />
-          <TextField
-            label='Last Name'
-            variant='outlined'
-            defaultValue='Touch'
-            size='small'
-            name='lastName'
-            value={formData.lastName}
-            onChange={inputChangeHandler}
-            fullWidth
-            sx={{ mb: 3 }}
-          />
-        </div>
+    <form className='mt-3' onSubmit={formik.handleSubmit}>
+      <div className='grid grid-cols-2 gap-4'>
         <TextField
-          label='Email'
-          fullWidth
-          variant='outlined'
+          label='First Name'
           size='small'
-          name='email'
-          value={formData.email}
-          onChange={inputChangeHandler}
-          disabled
+          name='firstName'
+          value={formik.values.firstName}
+          onChange={formik.handleChange}
+          fullWidth
           sx={{ mb: 3 }}
         />
         <TextField
-          label='Phone Number'
+          label='Last Name'
           size='small'
-          variant='outlined'
-          name='phoneNumber'
+          name='lastName'
+          value={formik.values.lastName}
+          onChange={formik.handleChange}
           fullWidth
-          value={formData.phoneNumber}
-          onChange={inputChangeHandler}
           sx={{ mb: 3 }}
         />
-        <div>
-          <input
-            type='file'
-            className='block w-full text-sm text-gray-500'
-            name='file'
-            value={formData.file}
-            onChange={inputChangeHandler}
-          />
-        </div>
-        <button
-          type='submit'
-          className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer mt-4'>
-          Update
-        </button>
-      </form>
-    </div>
+      </div>
+      <TextField
+        label='Email'
+        name='email'
+        value={formik.values.email}
+        onChange={formik.handleChange}
+        fullWidth
+        size='small'
+        disabled
+        sx={{ mb: 3 }}
+      />
+      <TextField
+        label='Phone Number'
+        name='phoneNumber'
+        value={formik.values.phoneNumber}
+        onChange={formik.handleChange}
+        fullWidth
+        size='small'
+        sx={{ mb: 3 }}
+      />
+      <input
+        type='file'
+        name='file'
+        className='block w-full text-sm text-gray-500'
+        onChange={(e) => {
+          formik.setFieldValue('file', e.currentTarget.files[0]);
+        }}
+      />
+      <button
+        type='submit'
+        className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer mt-4'>
+        Update
+      </button>
+    </form>
   );
 }
-
-export default Information;

@@ -1,20 +1,22 @@
 import ReactApexChart from 'react-apexcharts';
 
-function EmployeeBoardingBarChart({ previousData, currentData, categories, text }) {
-  const options = {
-    chart: { id: 'basic-bar' },
-    xaxis: { categories: categories, title: { text: 'Week', style: { fontWeight: 'normal', fontSize: '14px' } } },
-    title: { text: text, align: 'left', style: { fontWeight: 'normal', fontSize: '14px' } },
-    legend: { position: 'top' },
-    plotOptions: { bar: { borderRadius: 3, borderRadiusApplication: 'end', columnWidth: '50%' } },
-    dataLabels: { enabled: false },
-  };
-
-  const series = [
-    { name: 'Previous', data: previousData, color: '#4285f4' },
-    { name: 'Current', data: currentData, color: '#db4437' },
-  ];
-  return <ReactApexChart options={options} series={series} type='bar' height={185} />;
-}
+const EmployeeBoardingBarChart = ({ previousData, currentData, categories, text }) => (
+  <ReactApexChart
+    type='bar'
+    height={200}
+    series={[
+      { name: 'Previous', data: previousData, color: '#4285f4' },
+      { name: 'Current', data: currentData, color: '#db4437' },
+    ]}
+    options={{
+      chart: { id: 'employee-boarding-bar' },
+      xaxis: { categories, title: { text: 'Week', style: { fontWeight: 400, fontSize: 14 } } },
+      title: { text, align: 'left', style: { fontWeight: 400, fontSize: 14 } },
+      legend: { position: 'top' },
+      plotOptions: { bar: { borderRadius: 3, borderRadiusApplication: 'end', columnWidth: '50%' } },
+      dataLabels: { enabled: false },
+    }}
+  />
+);
 
 export default EmployeeBoardingBarChart;

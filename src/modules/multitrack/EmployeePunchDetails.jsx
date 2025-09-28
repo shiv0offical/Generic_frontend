@@ -12,93 +12,65 @@ const columns = [
   { key: 'punchTime', header: 'Punch Time' },
 ];
 
-const data = [
-  {
-    firstName: 'John',
-    lastName: 'Doe',
-    punchId: 'P123',
-    punchTime: '2022-01-01 09:00:00',
-  },
-  {
-    firstName: 'Jane',
-    lastName: 'Smith',
-    punchId: 'P456',
-    punchTime: '2022-01-01 10:00:00',
-  },
-  {
-    firstName: 'Bob',
-    lastName: 'Johnson',
-    punchId: 'P789',
-    punchTime: '2022-01-01 11:00:00',
-  },
-];
-
-function EmployeePunchDetails() {
-  const location = useLocation();
-  const { selectedVehicle } = location.state || {};
+export default function EmployeePunchDetails() {
+  const { state } = useLocation();
+  const selectedVehicle = state?.selectedVehicle;
   const companyId = localStorage.getItem('company_id');
 
-  console.log(
-    '🚀 ~ EmployeePunchDetails.jsx:45 ~ EmployeePunchDetails ~ selectedVehicle:',
-    selectedVehicle.vehicle_name
-  );
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
-  const [punhcData, setPunchData] = useState([]);
-
-  const fetchData = async () => {
-    const res = await ApiService.get(APIURL.PUNCHINMULTITRACK, {
-      company_id: companyId,
-      vehicle_name: selectedVehicle.vehicle_name,
-    });
-
-    if (res.success) {
-      console.log('🚀 ~ EmployeePunchDetails.jsx:65 ~ fetchData ~ res:', res.data);
-
-      const formatData = res.data.employees.map((item, idx) => {
-        console.log('🚀 ~ EmployeePunchDetails.jsx:71 ~ fetchData ~ item:', item);
-        return {
-          id: idx + 1,
-          firstName: item.first_name,
-          lastName: item.last_name,
-          punchId: item.punch_id,
-          punchTime: item.punch_time
-            ? new Date(item.punch_time).toLocaleString()
-            : item.mssg || 'Punch data not available',
-        };
-      });
-      setPunchData(formatData);
-    }
-  };
-  console.log('🚀 ~ EmployeePunchDetails.jsx:58 ~ EmployeePunchDetails ~ punhcData:', punhcData);
+  const [data, setData] = useState([]);
+  const [vehicleInfo, setVehicleInfo] = useState({});
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!selectedVehicle) return;
+    (async () => {
+      const res = await ApiService.get(APIURL.PUNCHINMULTITRACK, {
+        company_id: companyId,
+        vehicle_name: selectedVehicle.vehicle_name,
+      });
+      if (res.success) {
+        setData(
+          (res.data.employees || []).map((item, idx) => ({
+            id: idx + 1,
+            firstName: item.first_name,
+            lastName: item.last_name,
+            punchId: item.punch_id,
+            punchTime: item.punch_time
+              ? new Date(item.punch_time).toLocaleString()
+              : item.mssg || 'Punch data not available',
+          }))
+        );
+        setVehicleInfo({
+          name: selectedVehicle.vehicle_name || '-',
+          number: selectedVehicle.vehicle_number || '-',
+          speed: selectedVehicle.speed ?? '-',
+          onboarded: res.data.employees?.length ?? 0,
+        });
+      }
+    })();
+  }, [selectedVehicle, companyId]);
 
-  const handleSort = (columnKey) => {
-    const isAsc = orderBy === columnKey && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(columnKey);
+  const handleSort = (key) => {
+    setOrderBy(key);
+    setOrder(orderBy === key && order === 'asc' ? 'desc' : 'asc');
   };
 
-  const sortedData = [...punhcData].sort((a, b) => {
-    if (!orderBy) return 0;
-    const valueA = a[orderBy];
-    const valueB = b[orderBy];
+  const sorted = orderBy
+    ? [...data].sort((a, b) => {
+        const va = a[orderBy],
+          vb = b[orderBy];
+        if (typeof va === 'string') return order === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        return order === 'asc' ? va - vb : vb - va;
+      })
+    : data;
 
-    if (typeof valueA === 'string')
-      return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    return order === 'asc' ? valueA - valueB : valueB - valueA;
-  });
-
-  const paginatedData = sortedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const paginated = sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const handleExport = () => {
-    // Add your export logic here
-    console.log('Exporting data...');
+    // Implement export logic here
   };
 
   return (
@@ -107,10 +79,10 @@ function EmployeePunchDetails() {
         <div className='p-4'>
           <h3 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehicle Details</h3>
           <ul className='list-disc list-inside'>
-            <li>Vehicle Name:TN87E6249</li>
-            <li>Vehicle Number : TN87E6249</li>
-            <li>Speed : 0</li>
-            <li>Total Onboarded Employee : 0</li>
+            <li>Vehicle Name: {vehicleInfo.name}</li>
+            <li>Vehicle Number: {vehicleInfo.number}</li>
+            <li>Speed: {vehicleInfo.speed}</li>
+            <li>Total Onboarded Employee: {vehicleInfo.onboarded}</li>
           </ul>
         </div>
         <div className='flex justify-between items-center p-4'>
@@ -139,11 +111,11 @@ function EmployeePunchDetails() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedData.map((row) => (
+              {paginated.map((row) => (
                 <TableRow key={row.id}>
-                  {columns.map((column) => (
-                    <TableCell className='whitespace-nowrap' key={column.key}>
-                      {column.render ? column.render(row[column.key], row) : row[column.key]}
+                  {columns.map((col) => (
+                    <TableCell className='whitespace-nowrap' key={col.key}>
+                      {row[col.key]}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -157,9 +129,9 @@ function EmployeePunchDetails() {
           count={data.length}
           rowsPerPage={rowsPerPage}
           page={page}
-          onPageChange={(event, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
         />
@@ -167,5 +139,3 @@ function EmployeePunchDetails() {
     </div>
   );
 }
-
-export default EmployeePunchDetails;

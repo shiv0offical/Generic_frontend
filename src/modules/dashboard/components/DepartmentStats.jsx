@@ -19,46 +19,29 @@ const icons = {
 
 const normalizeKey = (str) => str.toLowerCase().replace(/\s/g, '').trim();
 
-function DepartmentStats() {
+export default function DepartmentStats() {
   const [departments, setDepartments] = useState([]);
 
-  const fetchDepartmentData = async () => {
-    let params = {};
-
-    if (window.location.pathname.startsWith('/dashboard')) {
-      const company_id = localStorage.getItem('company_id');
-      if (company_id) params.company_id = company_id;
-    }
-
-    const departmentRes = await ApiService.get(APIURL.DEPARTMENTANALYTICS, params);
-    if (departmentRes?.success) setDepartments(departmentRes.data);
-  };
-
   useEffect(() => {
-    fetchDepartmentData();
+    const company_id = localStorage.getItem('company_id');
+    ApiService.get(APIURL.DEPARTMENTANALYTICS, { company_id }).then((res) => {
+      if (res?.success) setDepartments(res.data);
+    });
   }, []);
 
   return (
     <div className='shadow-sm rounded-sm bg-white w-full p-3'>
-      <p className='block pb-3 text-sm'>Departments Analytics</p>
-      <hr className='border border-gray-100' />
-      <div className='my-4'>
-        {[0, 1].map((row) => (
-          <div key={row} className={`flex justify-between items-center ${row === 1 ? 'mt-3' : ''}`}>
-            {departments.slice(row * 3, row * 3 + 3).map((dept, idx) => {
-              return (
-                <div key={idx} className='w-1/3 flex flex-col items-center'>
-                  <img src={icons[normalizeKey(dept.department_name)]} alt={dept.department_name} className='w-10' />
-                  <span className='block'>{dept.count}</span>
-                  <p className='block text-sm'>{dept.department_name.trim()}</p>
-                </div>
-              );
-            })}
+      <p className='pb-3 text-sm'>Departments Analytics</p>
+      <hr className='border-gray-100' />
+      <div className='my-4 grid grid-cols-3 gap-y-6'>
+        {departments.slice(0, 6).map((dept, i) => (
+          <div key={i} className='flex flex-col items-center'>
+            <img src={icons[normalizeKey(dept.department_name)]} alt={dept.department_name} className='w-10' />
+            <span>{dept.count}</span>
+            <p className='text-sm'>{dept.department_name.trim()}</p>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-export default DepartmentStats;

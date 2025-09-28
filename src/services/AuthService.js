@@ -1,56 +1,45 @@
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { jwtDecode } from 'jwt-decode';
+import ApiService from './ApiService';
 
-export default {
-  login: async function (url, email, password) {
-    const finalUrl = `${BASE_URL}${url}`;
-    const requestBody = JSON.stringify({ email, password });
+const setToken = (token) => token && localStorage.setItem('authToken', token);
+const getToken = () => localStorage.getItem('authToken');
+const removeToken = () => localStorage.removeItem('authToken');
+const isTokenValid = (token) => {
+  try {
+    const { exp } = jwtDecode(token);
+    return exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+};
 
-    try {
-      let response = await fetch(finalUrl, {
-        method: 'POST',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: requestBody,
-      });
-
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-
-      let responseData = await response.json();
-      console.log('responseData', responseData);
-
-      if (!responseData || !responseData.data) {
-        throw new Error('Invalid API response format');
-      }
-
-      return responseData;
-    } catch (error) {
-      console.error('Login request failed:', error);
-      throw error;
-    }
+const AuthService = {
+  login: async (url, email, password) => {
+    const data = await ApiService.post(url, { email, password });
+    setToken(data?.data?.token);
+    return data;
   },
 
-  verifyOtp: async function (url, userId, otp) {
-    const finalUrl = `${BASE_URL}${url}`;
-    const requestBody = JSON.stringify({ userId, otp });
+  verifyOtp: async (url, userId, otp) => {
+    const data = await ApiService.post(url, { userId, otp });
+    setToken(data?.data?.token);
+    return data;
+  },
 
+  logout: removeToken,
+  getToken,
+  isAuthenticated: () => {
+    const token = getToken();
+    return !!token && isTokenValid(token);
+  },
+  getUser: () => {
+    const token = getToken();
     try {
-      let response = await fetch(finalUrl, {
-        method: 'POST',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: requestBody,
-      });
-
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-
-      const responseData = await response.json();
-
-      if (!responseData || !responseData.data || !responseData.data.token || !responseData.data.user) {
-        throw new Error('Invalid OTP response format');
-      }
-      localStorage.setItem('authToken', responseData?.data?.token);
-      return responseData;
-    } catch (error) {
-      console.error('OTP verification failed:', error);
-      throw error;
+      return token ? jwtDecode(token) : null;
+    } catch {
+      return null;
     }
   },
 };
+
+export default AuthService;

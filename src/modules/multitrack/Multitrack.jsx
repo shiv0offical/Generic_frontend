@@ -1,69 +1,68 @@
-import { APIURL } from '../../constants';
 import { useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
-import { Lastvehicledata } from '../../services';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import MapComponent from './components/MapComponent';
 import TrackingPanel from './components/TrackingPanel';
 import MheStatusPanel from './components/MheStatusPanel';
 import { fetchLastVehicles, fetchVehicles } from '../../redux/vehicleSlice';
+import { APIURL } from '../../constants';
+import { Lastvehicledata } from '../../services';
 
 export default function Multitrack() {
-  const lastPath = useRef();
   const dispatch = useDispatch();
-  const location = useLocation();
+  const [showPanel, setShowPanel] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [isMheStatusVisible, setIsMheStatusVisible] = useState(false);
 
   useEffect(() => {
-    if (lastPath.current === location.pathname) return;
-    lastPath.current = location.pathname;
+    let intervalId;
+    let fetched = false;
 
-    let mounted = true;
-    (async () => {
+    const fetchData = async () => {
+      if (fetched) return;
+      fetched = true;
       const token = localStorage.getItem('authToken');
       const company_id = localStorage.getItem('company_id');
       if (!token || !company_id) return;
 
-      let vehicles = [];
-      const res = dispatch(fetchVehicles({ limit: 100 }));
-      vehicles = res?.payload?.data || [];
-
+      const res = await dispatch(fetchVehicles({ limit: 100 }));
+      const vehicles = res?.payload?.data?.vehicles || [];
       const imeis = vehicles.map((v) => v.imei_number).filter(Boolean);
       if (!imeis.length) return;
 
-      let lastData = await Promise.all(
-        imeis.map((imei) => Lastvehicledata.get(`${APIURL.LASTVEHICLEDATA}?imei=${imei}`).catch(() => null))
-      );
-      const valid = lastData.filter((d) => d && d.success);
-      if (valid.length && mounted) dispatch(fetchLastVehicles(valid));
-    })();
-
-    return () => {
-      mounted = false;
+      try {
+        const batchRes = await Lastvehicledata.get(`${APIURL.LASTVEHICLEDATA}?imei=${imeis.join(',')}`);
+        if (batchRes?.success && Array.isArray(batchRes.data) && batchRes.data.length) {
+          dispatch(fetchLastVehicles(batchRes.data));
+        }
+      } catch {
+        const chunkSize = 10;
+        for (let i = 0; i < imeis.length; i += chunkSize) {
+          const chunk = imeis.slice(i, i + chunkSize);
+          const results = await Promise.all(
+            chunk.map((imei) => Lastvehicledata.get(`${APIURL.LASTVEHICLEDATA}?imei=${imei}`).catch(() => null))
+          );
+          const valid = results.filter((d) => d?.success);
+          if (valid.length) dispatch(fetchLastVehicles(valid));
+        }
+      }
     };
-  }, [dispatch, location.pathname]);
+
+    fetchData();
+    intervalId = setInterval(fetchData, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch]);
 
   const handleRightPanel = (vehicle) => {
-    if (isMheStatusVisible && vehicle?.imei === selectedVehicle?.imei) {
-      setIsMheStatusVisible(false);
-      setSelectedVehicle(null);
-    } else {
-      setSelectedVehicle(vehicle);
-      setIsMheStatusVisible(true);
-    }
+    setShowPanel((v) => (v && vehicle?.imei === selectedVehicle?.imei ? false : true));
+    setSelectedVehicle((v) => (v && vehicle?.imei === selectedVehicle?.imei ? null : vehicle));
   };
 
   return (
     <div className='relative flex-1 h-screen rounded-md'>
       <TrackingPanel handleRightPanel={handleRightPanel} />
       <MapComponent selectedVehicle={selectedVehicle} />
-      {isMheStatusVisible && (
-        <MheStatusPanel
-          handleRightPanel={handleRightPanel}
-          isShowPanel={isMheStatusVisible}
-          vehicle={selectedVehicle}
-        />
+      {showPanel && (
+        <MheStatusPanel handleRightPanel={handleRightPanel} isShowPanel={showPanel} vehicle={selectedVehicle} />
       )}
     </div>
   );

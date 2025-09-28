@@ -82,7 +82,7 @@
 }
 
 .notification-sub-menu {
-  top: calc(100% - 89vh);
+  top: calc(100% - 87vh);
   /* width: 19.2vw; */
   width: 23rem;
   height: calc(100vh - 100px);

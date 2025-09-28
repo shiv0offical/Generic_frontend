@@ -5,118 +5,79 @@ import RoutingMatching from './RoutingMatching';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import lastVehicleData from '../../services/lastVehicleData';
 import { IconButton, Paper, Slider, Button, TextField, MenuItem } from '@mui/material';
-import 'leaflet-trackplayer';
 import { Menu as MenuIcon, Close as CloseIcon, PlayArrow as PlayIcon, Pause as PauseIcon } from '@mui/icons-material';
 
 export default function Playback() {
   const [showControls, setShowControls] = useState(true);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-
   const [shortcut, setShortcut] = useState('');
   const [routeCoordinate, setRouteCoordinate] = useState([]);
   const [speed, setSpeed] = useState(10);
   const [isPlay, setIsPlay] = useState(false);
 
-  const location = useLocation();
-  const selectedVehicle = location.state?.selectedVehicle;
+  const { state } = useLocation();
+  const selectedVehicle = state?.selectedVehicle;
 
-  const handleShortcutChange = (event) => {
-    setShortcut(event.target.value);
+  const setShortcutDates = (type) => {
+    const d = new Date();
+    if (type === 'yesterday') d.setDate(d.getDate() - 1);
+    const dateStr = d.toISOString().slice(0, 10);
+    setFromDate(`${dateStr}T00:00`);
+    setToDate(`${dateStr}T23:59`);
+  };
 
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
-
-    const formatDateTimeLocal = (date, time = '00:00') => `${date.toISOString().split('T')[0]}T${time}`;
-
-    if (event.target.value === 'today') {
-      const from = formatDateTimeLocal(today, '00:00');
-      const to = formatDateTimeLocal(today, '23:59');
-      setFromDate(from);
-      setToDate(to);
-    } else if (event.target.value === 'yesterday') {
-      const from = formatDateTimeLocal(yesterday, '00:00');
-      const to = formatDateTimeLocal(yesterday, '23:59');
-      setFromDate(from);
-      setToDate(to);
-    }
+  const handleShortcutChange = (e) => {
+    setShortcut(e.target.value);
+    if (e.target.value === 'today' || e.target.value === 'yesterday') setShortcutDates(e.target.value);
   };
 
   const handlePlay = async () => {
-    if (isPlay) {
-      // Pause
-      setIsPlay(false);
-      return;
-    }
-    if (!fromDate || !toDate) {
-      alert('Please select both From and To dates');
-      return;
-    }
-
+    if (isPlay) return setIsPlay(false);
+    if (!fromDate || !toDate) return alert('Select From/To dates');
     try {
-      // Ensure the dates are in UTC format
-      const fromISOString = new Date(fromDate).toISOString();
-      const toISOString = new Date(toDate).toISOString();
-
-      const response = await lastVehicleData.post(
+      const res = await lastVehicleData.post(
         APIURL.PLAYBACK,
         {},
-        { from: fromISOString, to: toISOString, imei: selectedVehicle.imei_number }
+        {
+          from: new Date(fromDate).toISOString(),
+          to: new Date(toDate).toISOString(),
+          imei: selectedVehicle.imei_number,
+        }
       );
-
-      if (response.success && response.data.length > 0) {
-        const coords = response.data.map((item) => [item.latitude, item.longitude]);
-
-        setRouteCoordinate(coords);
+      if (res.success && res.data.length) {
+        setRouteCoordinate(res.data.map((i) => [i.latitude, i.longitude]));
         setIsPlay(true);
-      } else {
-        alert('No data found for the selected time range.');
-      }
-    } catch (error) {
-      console.error('Error fetching playback data:', error);
+      } else alert('No data found');
+    } catch (e) {
+      console.error(e);
     }
   };
-  console.log('🚀 ~ :24 ~ Playback ~ routeCoordinate:', routeCoordinate);
 
-  const removeDuplicateCoordinates = (coords) => {
-    return coords.filter((coord, index, self) => {
-      if (index === 0) return true;
-      const [prevLat, prevLng] = self[index - 1];
-      return coord[0] !== prevLat || coord[1] !== prevLng;
-    });
-  };
-
-  const filteredCoodinate = removeDuplicateCoordinates(routeCoordinate);
+  const filteredCoordinate = routeCoordinate.filter(
+    (c, i, arr) => i === 0 || c[0] !== arr[i - 1][0] || c[1] !== arr[i - 1][1]
+  );
 
   return (
     <div className='relative w-full h-screen bg-gray-200'>
       <MapContainer
-        center={routeCoordinate.length > 0 ? routeCoordinate[0] : [12.6749816, 79.2863616]}
+        center={routeCoordinate[0] || [12.6749816, 79.2863616]}
         zoom={13}
-        scrollWheelZoom={true}
+        scrollWheelZoom
         className='w-full h-full z-0'>
-        <TileLayer
-          url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
-        />
-
+        <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' attribution='&copy; OpenStreetMap' />
         {routeCoordinate.length > 0 && (
-          <>
-            <RoutingMatching coordinates={filteredCoodinate} speed={speed} isPlaying={isPlay} />
-          </>
+          <RoutingMatching coordinates={filteredCoordinate} speed={speed} isPlaying={isPlay} />
         )}
       </MapContainer>
-
       <div className='absolute top-4 right-4 z-10'>
-        <IconButton className='bg-white shadow-md rounded-full' onClick={() => setShowControls(!showControls)}>
+        <IconButton className='bg-white shadow-md rounded-full' onClick={() => setShowControls((v) => !v)}>
           {showControls ? <CloseIcon /> : <MenuIcon />}
         </IconButton>
       </div>
-
       {showControls && (
         <Paper className='absolute top-16 right-4 p-4 shadow-lg w-64 bg-white'>
-          <h2 className='text-md text-center font-semibold'>{selectedVehicle.vehicle_name}</h2>
+          <h2 className='text-md text-center font-semibold'>{selectedVehicle?.vehicle_name}</h2>
           <div className='my-2'>
             <label className='text-sm'>From</label>
             <TextField
@@ -146,7 +107,7 @@ export default function Playback() {
           </div>
           <div className='my-2'>
             <label className='text-sm'>Speed Control</label>
-            <Slider value={speed} onChange={(e, newVal) => setSpeed(newVal)} min={0} max={100} className='w-full' />
+            <Slider value={speed} onChange={(_, v) => setSpeed(v)} min={0} max={100} className='w-full' />
           </div>
           <div className='flex justify-between'>
             <Button variant='contained' color='success'>
