@@ -1,13 +1,17 @@
 import moment from 'moment-timezone';
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import FilterOption from '../../../components/FilterOption';
-import { useDropdown } from '../../../hooks/useDropdown';
-import ReportTable from '../../../components/table/ReportTable';
-import { fetchPuchLogReport } from '../../../redux/punchInOutSlice';
-import { ApiService } from '../../../services';
-import { APIURL } from '../../../constants';
 import { toast } from 'react-toastify';
+import { useEffect, useState } from 'react';
+import { APIURL } from '../../../constants';
+import { ApiService } from '../../../services';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchPlants } from '../../../redux/plantSlice';
+import { useDropdown } from '../../../hooks/useDropdown';
+import FilterOption from '../../../components/FilterOption';
+import ReportTable from '../../../components/table/ReportTable';
+import { fetchDepartments } from '../../../redux/departmentSlice';
+import { fetchPuchLogReport } from '../../../redux/punchInOutSlice';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchAllEmployeeDetails } from '../../../redux/employeeSlice';
 
 const columns = [
   {
@@ -59,12 +63,56 @@ function PunchTimelog() {
 
   const company_id = localStorage.getItem('company_id');
 
+  // Dropdowns for employees, departments, plants
   const { employee } = useDropdown(company_id);
   const { options: employees } = employee;
 
+  const { departments } = useSelector((state) => state?.department);
+  const { plants } = useSelector((state) => state?.plant);
+  const { getAllEmployeeDetails } = useSelector((state) => state?.employee);
+
+  useEffect(() => {
+    if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id }));
+      dispatch(fetchDepartments({ limit: 100 }));
+      dispatch(fetchPlants({ limit: 100 }));
+      dispatch(fetchAllEmployeeDetails({ company_id, limit: 2000 }));
+    }
+  }, [dispatch, company_id]);
+
+  const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
+
+  const routeOptions =
+    vehicleRoutes?.routes?.map((route) => ({ label: `Route  - ${route?.name || 'N/A'}`, value: route?.id })) || [];
+
+  const busOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
+    })) || [];
+
+  // Plant options
+  const plantOptions = (plants || []).map((plant) => ({ label: plant.plant_name || 'N/A', value: plant.id }));
+  // Employee options (for multi-select)
+
+  const employeeOptions =
+    getAllEmployeeDetails?.employes?.map((emp) => ({
+      label: `${emp.employee_id} - ${emp.first_name}`,
+      value: emp.employee_id,
+    })) ||
+    employees ||
+    [];
+
   const [punchlogData, setPunchlogData] = useState([]);
   const [noPunchLogData, setNoPunchLogData] = useState([]);
-  const [filterData, setFilterData] = useState({ employee: [], fromDate: '', toDate: '' });
+  const [filterData, setFilterData] = useState({
+    employee: [],
+    busRoute: '',
+    fromDate: '',
+    toDate: '',
+    department: '',
+    plants: [],
+  });
 
   const { punchLogReportData, loading, error } = useSelector((state) => state?.punchInOut);
 
@@ -89,8 +137,11 @@ function PunchTimelog() {
     const filters = {
       company_id,
       id: employeeIds,
-      start: new Date(filterData.fromDate).toISOString(),
-      end: new Date(filterData.toDate).toISOString(),
+      route_id: filterData.busRoute,
+      start: filterData.fromDate ? new Date(filterData.fromDate).toISOString() : undefined,
+      end: filterData.toDate ? new Date(filterData.toDate).toISOString() : undefined,
+      department_id: filterData.department,
+      plant_id: Array.isArray(filterData.plants) ? filterData.plants.filter(Boolean).join(',') : '',
     };
 
     try {
@@ -100,7 +151,6 @@ function PunchTimelog() {
         toast.success(response.message);
         const { valid = [], noPunchLogs = [] } = response.data;
         const value = response?.data;
-        console.log('valid', valid);
         setPunchlogData(value);
         setNoPunchLogData(noPunchLogs);
       } else {
@@ -118,7 +168,14 @@ function PunchTimelog() {
   };
 
   const handleFormReset = () => {
-    setFilterData({ employee: '', fromDate: '', toDate: '' });
+    setFilterData({
+      employee: [],
+      busRoute: '',
+      fromDate: '',
+      toDate: '',
+      department: '',
+      plants: [],
+    });
   };
 
   return (
@@ -130,7 +187,11 @@ function PunchTimelog() {
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
-        employees={employees}
+        employees={employeeOptions}
+        routes={routeOptions}
+        buses={busOptions}
+        departments={departments}
+        plants={plantOptions}
       />
       <ReportTable
         columns={columns}

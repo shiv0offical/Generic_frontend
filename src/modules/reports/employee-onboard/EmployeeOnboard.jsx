@@ -3,59 +3,48 @@ import * as XLSX from 'xlsx';
 import moment from 'moment-timezone';
 import autoTable from 'jspdf-autotable';
 import { useEffect, useState } from 'react';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
 import { useDispatch, useSelector } from 'react-redux';
-import { setPlantData } from '../../../redux/plantSlice';
+import { fetchPlants } from '../../../redux/plantSlice';
 import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
-import { setVehicleRoute } from '../../../redux/vehicleRouteSlice';
-import { setDepartmentData } from '../../../redux/departmentSlice';
+import { fetchDepartments } from '../../../redux/departmentSlice';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchAllEmployeeDetails, fetchEmployeeOnboard } from '../../../redux/employeeSlice';
 
-const formatDate = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-IN');
-};
-const formatTime = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-};
+const formatDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN') : '');
 
 const columns = [
   {
     key: 'onboard_employee',
     header: 'Employee Name',
-    render: (_value, row) => row.onboard_employee || row.first_name || '-',
+    render: (_v, r) => r.onboard_employee || r.first_name || '-',
   },
   { key: 'punch_id', header: 'RFID Tag' },
   {
     key: 'punch_time',
     header: 'Punch Time',
-    render: (value) => (value ? moment(value).format('YYYY-MM-DD hh:mm:ss A') : '-'),
+    render: (v) => (v ? moment(v).format('YYYY-MM-DD hh:mm:ss A') : '-'),
   },
   {
     key: 'punch_status',
     header: 'Punch Status',
-    render: (value) => (value === true ? 'In' : value === false ? 'Out' : '-'),
+    render: (v) => (v === true ? 'In' : v === false ? 'Out' : '-'),
   },
   { key: 'vehicle_name', header: 'Vehicle Name' },
   { key: 'vehicle_number', header: 'Vehicle Number' },
   {
     key: 'location',
     header: 'Location',
-    render: (_value, row) =>
-      row.latitude && row.longitude ? `${Number(row.latitude).toFixed(6)}, ${Number(row.longitude).toFixed(6)}` : '-',
+    render: (_v, r) =>
+      r.latitude && r.longitude ? `${Number(r.latitude).toFixed(6)}, ${Number(r.longitude).toFixed(6)}` : '-',
   },
   {
     key: 'gmap',
     header: 'Google-map',
-    render: (_value, row) =>
-      row.latitude && row.longitude ? (
+    render: (_v, r) =>
+      r.latitude && r.longitude ? (
         <a
-          href={`https://maps.google.com/?q=${row.latitude},${row.longitude}`}
+          href={`https://maps.google.com/?q=${r.latitude},${r.longitude}`}
           target='_blank'
           className='text-blue-700'
           rel='noopener noreferrer'>
@@ -71,206 +60,146 @@ function EmployeeOnboard() {
   const dispatch = useDispatch();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
+  const { employeeOnboardData, loading, error } = useSelector((s) => s.employee);
 
-  const { employeeOnboardData, loading, error } = useSelector((state) => state?.employee);
-
-  useEffect(() => {
-    dispatch(fetchEmployeeOnboard({ page: page + 1, limit }));
-  }, [dispatch, page, limit]);
-
-  const tableData = Array.isArray(employeeOnboardData?.data)
-    ? employeeOnboardData.data.map((row) => ({
-        ...row,
-        location:
-          row.latitude && row.longitude
-            ? `${Number(row.latitude).toFixed(6)}, ${Number(row.longitude).toFixed(6)}`
-            : '-',
-        gmap: row.latitude && row.longitude ? `https://maps.google.com/?q=${row.latitude},${row.longitude}` : '',
-      }))
-    : [];
-
-  const departments = useSelector((state) => state?.departments?.departments);
-  const { getAllEmployeeDetails } = useSelector((state) => state.employee);
+  const { departments } = useSelector((s) => s.department);
+  const { getAllEmployeeDetails } = useSelector((s) => s.employee);
+  const { vehicleRoutes } = useSelector((s) => s.vehicleRoute);
+  const { plants } = useSelector((s) => s.plant);
 
   const today = moment().format('YYYY-MM-DD');
-
   const [filterData, setFilterData] = useState({
     route: [],
-    fromDate: today, // default today
-    toDate: today, //default today
+    busRoute: '',
+    fromDate: today,
+    toDate: today,
     department: '',
     employee: [],
     plants: [],
   });
   const [filteredData, setFilteredData] = useState([]);
-  const [employeeOptions, setEmployeeOptions] = useState([]);
-  const [routeOptions, setRouteOptions] = useState([]);
-  const [plantOptions, setPlantOptions] = useState([]);
 
   useEffect(() => {
-    getDepartmentData();
-  }, []);
+    // Fetch paginated onboard data for table
+    dispatch(fetchEmployeeOnboard({ page: page + 1, limit }));
 
-  const getDepartmentData = async () => {
-    const departmentsData = await ApiService.get(APIURL.DEPARTMENTS);
-    if (departmentsData.success) {
-      dispatch(setDepartmentData(departmentsData.data.departments));
-    }
-  };
+    // Fetch departments
+    dispatch(fetchDepartments({ limit: 100 }));
 
-  useEffect(() => {
-    getVehicleRouteData();
-  }, []);
+    // Fetch vehicle routes
+    dispatch(fetchVehicleRoutes({ limit: 100 }));
 
-  useEffect(() => {
-    getPlantData();
-  }, []);
+    // Fetch plants
+    dispatch(fetchPlants({ limit: 100 }));
 
-  const getPlantData = async () => {
-    try {
-      const res = await ApiService.get(APIURL.PLANTS);
-      if (res.success) {
-        dispatch(setPlantData(res.data.plants));
-        setPlantOptions(res.data.plants);
-      }
-    } catch (err) {
-      console.log('Something went wrong fetching plant data', err);
-    }
-  };
-
-  useEffect(() => {
+    // Fetch all employees
     const company_id = localStorage.getItem('company_id');
-    if (company_id) {
-      dispatch(fetchAllEmployeeDetails({ company_id }));
-    }
-  }, [dispatch]);
+    if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 2000 }));
 
-  useEffect(() => {
-    if (getAllEmployeeDetails?.length) {
-      const employeeOpts = getAllEmployeeDetails.map((emp) => ({
-        label: `${emp.employee_id} - ${emp.first_name}`,
-        value: emp.employee_id,
-      }));
-      setEmployeeOptions(employeeOpts);
-    }
-  }, [getAllEmployeeDetails]);
-
-  const getVehicleRouteData = async () => {
-    const response = await ApiService.get(APIURL.VEHICLE_ROUTE);
-    if (response.success) {
-      dispatch(setVehicleRoute(response.data.vehicleRoute));
-      const routeOpts = response.data.map((route) => ({
-        label: `${route.route_number} - ${route.name}`, //Format here
-        value: route.vehicle_id?.toString(),
-      }));
-
-      setRouteOptions(routeOpts);
-    }
-  };
-
-  useEffect(() => {
-    const formattedStart = moment(today).format('YYYY-MM-DD');
-    const formattedEnd = moment(today).format('YYYY-MM-DD');
-
+    // Fetch filtered onboard data for export
     const payload = {
       company_id: localStorage.getItem('company_id'),
       department_id: '',
-      start: formattedStart,
-      end: formattedEnd,
+      start: today,
+      end: today,
       employee_id: '',
       vehicle_route_id: '',
       plant_id: '',
     };
+    dispatch(fetchEmployeeOnboard(payload)).then((res) => setFilteredData(res?.payload?.data || []));
+  }, [dispatch, page, limit, today]);
 
-    dispatch(fetchEmployeeOnboard(payload)).then((res) => {
-      if (res?.payload?.data?.length) {
-        setFilteredData(res.payload.data);
-      } else {
-        setFilteredData([]);
-      }
-    });
-  }, []);
+  const employeeOptions =
+    getAllEmployeeDetails.employes?.map((emp) => ({
+      label: `${emp.employee_id} - ${emp.first_name}`,
+      value: emp.employee_id,
+    })) || [];
+  const routeOptions =
+    vehicleRoutes.routes?.map((route) => ({ label: `Route  - ${route?.name || 'N/A'}`, value: route?.id })) || [];
+  const busOptions =
+    vehicleRoutes.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
+    })) || [];
+  const plantOptions = (plants || []).map((plant) => ({ label: plant.plant_name || 'N/A', value: plant.id }));
 
-  const handleFormSubmit = (event) => {
-    event.preventDefault();
+  const tableData =
+    employeeOnboardData?.data?.map((row) => ({
+      ...row,
+      location:
+        row.latitude && row.longitude ? `${Number(row.latitude).toFixed(6)}, ${Number(row.longitude).toFixed(6)}` : '-',
+      gmap: row.latitude && row.longitude ? `https://maps.google.com/?q=${row.latitude},${row.longitude}` : '',
+    })) || [];
 
-    const formattedStart = moment(filterData.fromDate).format('YYYY-MM-DD');
-    const formattedEnd = moment(filterData.toDate).format('YYYY-MM-DD');
-
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    const { fromDate, toDate, department, employee, route, busRoute, plants: plantArr } = filterData;
     const payload = {
       company_id: localStorage.getItem('company_id'),
-      department_id: filterData.department,
-      start: formattedStart,
-      end: formattedEnd,
+      department_id: department,
+      start: moment(fromDate).format('YYYY-MM-DD'),
+      end: moment(toDate).format('YYYY-MM-DD'),
       employee_id:
-        Array.isArray(filterData.employee) && filterData.employee.length === getAllEmployeeDetails.length
+        Array.isArray(employee) && employee.length === getAllEmployeeDetails.employes?.length
           ? 'All'
-          : filterData.employee?.filter(Boolean).join(',') || '',
-      vehicle_route_id: Array.isArray(filterData.route) ? filterData.route.filter(Boolean).join(',') : '',
-      plant_id: Array.isArray(filterData.plants) ? filterData.plants.filter(Boolean).join(',') : '',
+          : employee?.filter(Boolean).join(',') || '',
+      vehicle_route_id: Array.isArray(route) ? route.filter(Boolean).join(',') : '',
+      bus_route_id: busRoute,
+      plant_id: Array.isArray(plantArr) ? plantArr.filter(Boolean).join(',') : '',
     };
-
-    dispatch(fetchEmployeeOnboard(payload)).then((res) => {
-      if (res?.payload?.data?.length) {
-        setFilteredData(res.payload.data);
-      } else {
-        setFilteredData([]);
-      }
-    });
+    dispatch(fetchEmployeeOnboard(payload)).then((res) => setFilteredData(res?.payload?.data || []));
   };
 
-  const handleFormReset = () => {
+  const handleFormReset = () =>
     setFilterData({
       route: [],
+      busRoute: '',
       fromDate: today,
       toDate: today,
       department: '',
       employee: [],
       plants: [],
     });
-  };
 
   const handleExport = () => {
     const exportData = filteredData?.map((row) => {
-      const latest = row?.punch_time;
-      const lat = row?.employee?.boarding_latitude;
-      const lng = row?.employee?.boarding_longitude;
-      const gMapUrl = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : '';
-
+      const emp = row?.employee || {};
+      const gMapUrl =
+        emp.boarding_latitude && emp.boarding_longitude
+          ? `https://www.google.com/maps?q=${emp.boarding_latitude},${emp.boarding_longitude}`
+          : '';
       return {
-        Date: formatDate(latest),
+        Date: formatDate(row?.punch_time),
         'Boarding In': formatDate(row?.boarding_in),
         'Boarding Out': formatDate(row?.boarding_out),
-        'Employee Name': `${row?.employee?.first_name || ''} ${row?.employee?.last_name || ''}`.trim(),
-        'Employee Id': row?.employee?.employee_id || '',
-        Plant: row?.employee?.plant?.plant_name || '',
-        Department: row?.employee?.department?.department_name || '',
-        'Route Name': row?.employee?.vehicleRoute?.name || '',
-        'Route No': row?.employee?.vehicleRoute?.route_number || '',
-        Source: row?.employee?.boarding_address || '',
+        'Employee Name': `${emp.first_name || ''} ${emp.last_name || ''}`.trim(),
+        'Employee Id': emp.employee_id || '',
+        Plant: emp.plant?.plant_name || '',
+        Department: emp.department?.department_name || '',
+        'Route Name': emp.vehicleRoute?.name || '',
+        'Route No': emp.vehicleRoute?.route_number || '',
+        Source: emp.boarding_address || '',
         Destination: row?.plant_name || '',
-        'Nearest Location': row?.employee?.nearest_location || '',
+        'Nearest Location': emp.nearest_location || '',
         'G-Map': gMapUrl,
       };
     });
-
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     worksheet['!cols'] = [
-      { wch: 12 }, // Date
-      { wch: 14 }, // Boarding In
-      { wch: 14 }, // Boarding Out
-      { wch: 25 }, // Employee Name
-      { wch: 15 }, // Emp.ID
-      { wch: 20 }, // Plant
-      { wch: 20 }, // Department
-      { wch: 20 }, // Route Name
-      { wch: 12 }, // Route No
-      { wch: 30 }, // Source
-      { wch: 20 }, // Destination
-      { wch: 20 }, // Nearest Location
-      { wch: 40 }, // G-Map
+      { wch: 12 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 12 },
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 40 },
     ];
-
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Employees Onboard');
     XLSX.writeFile(workbook, 'employees_onboard.xlsx');
@@ -278,63 +207,58 @@ function EmployeeOnboard() {
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
-
     const tableData = filteredData?.map((row) => {
-      const latest = row?.punch_time;
-      const lat = row?.employee?.boarding_latitude;
-      const lng = row?.employee?.boarding_longitude;
-      const gMapUrl = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : '';
-
+      const emp = row?.employee || {};
+      const gMapUrl =
+        emp.boarding_latitude && emp.boarding_longitude
+          ? `https://www.google.com/maps?q=${emp.boarding_latitude},${emp.boarding_longitude}`
+          : '';
       return [
-        formatDate(latest),
+        formatDate(row?.punch_time),
         formatDate(row?.boarding_in),
         formatDate(row?.boarding_out),
-        `${row?.employee?.first_name || ''} ${row?.employee?.last_name || ''}`.trim(),
-        row?.employee?.employee_id || '',
-        row?.employee?.plant?.plant_name || '',
-        row?.employee?.department?.department_name || '',
-        row?.employee?.vehicleRoute?.name || '',
-
-        row?.employee?.vehicleRoute?.route_number || '',
-        row?.employee?.boarding_address || '',
+        `${emp.first_name || ''} ${emp.last_name || ''}`.trim(),
+        emp.employee_id || '',
+        emp.plant?.plant_name || '',
+        emp.department?.department_name || '',
+        emp.vehicleRoute?.name || '',
+        emp.vehicleRoute?.route_number || '',
+        emp.boarding_address || '',
         row?.plant_name || '',
-        row?.employee?.nearest_location || '',
+        emp.nearest_location || '',
         gMapUrl,
       ];
     });
-
-    const tableHeaders = [
-      'Date',
-      'Boarding In',
-      'Boarding Out',
-      'Employee Name',
-      'Employee ID',
-      'Plant',
-      'Department',
-      'Route Name',
-      'Route No',
-      'Source',
-      'Destination',
-      'Nearest Location',
-      'G-Map',
-    ];
-
     autoTable(doc, {
-      head: [tableHeaders],
+      head: [
+        [
+          'Date',
+          'Boarding In',
+          'Boarding Out',
+          'Employee Name',
+          'Employee ID',
+          'Plant',
+          'Department',
+          'Route Name',
+          'Route No',
+          'Source',
+          'Destination',
+          'Nearest Location',
+          'G-Map',
+        ],
+      ],
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [7, 22, 61] },
       startY: 20,
       margin: { left: 10, right: 10 },
     });
-
     doc.save('employees_onboard.pdf');
   };
 
   return (
     <div className='w-full h-full p-2'>
       <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Employees On-Board Report</h1>
-
       <FilterOption
         handleExport={handleExport}
         handleExportPDF={handleExportPDF}
@@ -343,6 +267,7 @@ function EmployeeOnboard() {
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
         routes={routeOptions}
+        buses={busOptions}
         departments={departments}
         employees={employeeOptions}
         plants={plantOptions}

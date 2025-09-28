@@ -3,7 +3,6 @@ import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../components/FilterOption';
-import CommonSearch from '../../../components/CommonSearch';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchFeedbackReport } from '../../../redux/feedBackReportSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
@@ -24,24 +23,28 @@ function Feedback() {
   const dispatch = useDispatch();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
-  const [searchQuery, setSearchQuery] = useState('');
   const company_id = localStorage.getItem('company_id');
 
   const { feedbackReportData, loading, error } = useSelector((state) => state?.feedbackReport);
 
   useEffect(() => {
-    dispatch(fetchFeedbackReport({ page: page + 1, limit, search: searchQuery }));
+    dispatch(fetchFeedbackReport({ page: page + 1, limit }));
     if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
-  }, [dispatch, page, limit, company_id, searchQuery]);
+  }, [dispatch, page, limit, company_id]);
+
   const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
 
-  const routeOptions = Array.isArray(vehicleRoutes?.routes)
-    ? vehicleRoutes.routes.map((route) => {
-        const vehicleNumber = route?.vehicle?.vehicle_number || route?.route_number || 'N/A';
-        const routeName = route?.name || 'N/A';
-        return { label: `Route ${vehicleNumber} - ${routeName}`, value: route?.id };
-      })
-    : [];
+  const vehicleOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
+    })) || [];
+
+  const routeOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Route  - ${route?.name || 'N/A'}`,
+      value: route?.id,
+    })) || [];
 
   const tableData = Array.isArray(feedbackReportData?.feedbacks)
     ? feedbackReportData.feedbacks.map((item) => ({
@@ -73,7 +76,6 @@ function Feedback() {
       route_id: filterData.busRoute,
       start: filterData.fromDate,
       end: filterData.toDate,
-      search: searchQuery,
     };
     dispatch(fetchFeedbackReport(payload)).then((res) => {
       if (res?.payload?.status == 200) {
@@ -86,7 +88,6 @@ function Feedback() {
 
   const handleFormReset = () => {
     setFilterData({ busRoute: '', fromDate: '', toDate: '' });
-    setSearchQuery('');
   };
 
   return (
@@ -95,7 +96,6 @@ function Feedback() {
         <h1 className='text-2xl font-bold text-[#07163d]'>
           Feedback Report (Total: {feedbackReportData?.pagination?.total || 0})
         </h1>
-        <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
       <FilterOption
         handleExport={handleExport}
@@ -103,7 +103,8 @@ function Feedback() {
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
-        busRouteNo={routeOptions}
+        routes={routeOptions}
+        buses={vehicleOptions}
       />
       <ReportTable
         columns={columns}

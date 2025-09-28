@@ -1,11 +1,11 @@
 import moment from 'moment-timezone';
+import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import ReportTable from '../../../components/table/ReportTable';
-import { fetchGeoToGeoFence, fetchVehicleGeoFence } from '../../../redux/geofenceSlice';
 import FilterOption from '../../../components/FilterOption';
-import { fetchAllVehicleData } from '../../../redux/vehicleReportSlice';
-import { toast } from 'react-toastify';
+import ReportTable from '../../../components/table/ReportTable';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchGeoToGeoFence, fetchVehicleGeoFence } from '../../../redux/geofenceSlice';
 
 const columns = [
   {
@@ -113,35 +113,34 @@ function GeofencViolation() {
 
   const [filterData, setFilterData] = useState({
     bus: '',
+    route: '',
     startGeoFence: '',
     endGeoFence: '',
     fromDate: '',
     toDate: '',
   });
 
-  const { allVehicledata } = useSelector((state) => state?.vehicleReport);
-  const { vehicleGeoFence } = useSelector((state) => state?.geofence);
-
   useEffect(() => {
     if (company_id) {
-      dispatch(fetchAllVehicleData({ company_id }));
       dispatch(fetchVehicleGeoFence({ company_id }));
+      dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
     }
   }, [dispatch, company_id]);
 
+  const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
+
   const buses =
-    allVehicledata?.data?.map((vehicle) => ({
-      label: vehicle.vehicle_number,
-      value: vehicle.id,
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
     })) || [];
 
-  const geofenceOptions =
-    vehicleGeoFence?.data?.map((item) => ({
-      label: `${item.geofence_name} (${item.location})`,
-      value: item.id,
+  const routes =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Route  - ${route?.name || 'N/A'}`,
+      value: route?.id,
     })) || [];
 
-  // Prepare reportRows for export with only the columns in the table
   const reportRows =
     data.map((item) => ({
       created_at: item.created_at,
@@ -174,10 +173,11 @@ function GeofencViolation() {
     const payload = {
       company_id,
       vehicle_id: filterData.bus,
+      route_id: filterData.route,
       start_geofence: filterData.startGeoFence,
       end_geofence: filterData.endGeoFence,
-      start_time: new Date(filterData.fromDate).toISOString(),
-      end_time: new Date(filterData.toDate).toISOString(),
+      start_time: filterData.fromDate ? new Date(filterData.fromDate).toISOString() : undefined,
+      end_time: filterData.toDate ? new Date(filterData.toDate).toISOString() : undefined,
     };
 
     dispatch(fetchGeoToGeoFence(payload)).then((res) => {
@@ -255,7 +255,7 @@ function GeofencViolation() {
   };
 
   const handleFormReset = () => {
-    setFilterData({ bus: '', startGeoFence: '', endGeoFence: '', fromDate: '', toDate: '' });
+    setFilterData({ bus: '', route: '', startGeoFence: '', endGeoFence: '', fromDate: '', toDate: '' });
   };
 
   return (
@@ -268,8 +268,7 @@ function GeofencViolation() {
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
         buses={buses}
-        startGeoFence={geofenceOptions}
-        endGeoFence={geofenceOptions}
+        routes={routes}
       />
 
       <ReportTable

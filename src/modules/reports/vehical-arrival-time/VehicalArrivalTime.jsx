@@ -40,16 +40,23 @@ function VehicalArrivalTime() {
 
   const company_id = localStorage.getItem('company_id');
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
   }, [dispatch, company_id]);
 
   const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
+
   const routeOptions = Array.isArray(vehicleRoutes?.routes)
-    ? vehicleRoutes.routes.map((route) => {
-        const vehicleNumber = route?.vehicle?.vehicle_number || route?.route_number || 'N/A';
-        const routeName = route?.name || 'N/A';
-        return { label: `Route ${vehicleNumber} - ${routeName}`, value: route?.id };
-      })
+    ? vehicleRoutes.routes.map((route) => ({
+        label: `Route  - ${route?.name || 'N/A'}`,
+        value: route?.id,
+      }))
+    : [];
+
+  const busOptions = Array.isArray(vehicleRoutes?.routes)
+    ? vehicleRoutes.routes.map((route) => ({
+        label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+        value: route?.id,
+      }))
     : [];
 
   const [filterData, setFilterData] = useState({ busRoute: '', fromDate: '', toDate: '' });
@@ -131,7 +138,8 @@ function VehicalArrivalTime() {
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
-        busRouteNo={routeOptions}
+        routes={routeOptions}
+        buses={busOptions}
       />
       <ReportTable
         columns={columns}

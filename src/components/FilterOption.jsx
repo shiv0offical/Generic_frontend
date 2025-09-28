@@ -9,7 +9,6 @@ function FilterOption({
   filterData,
   setFilterData,
   handleFormReset,
-  busRoutes = [],
   busRouteNo = [],
   buses = [],
   geofenceTypes = [],
@@ -25,18 +24,13 @@ function FilterOption({
   plants = [],
 }) {
   const departmentOptions = departments.map((dept) => ({ label: dept.department_name, value: dept.department_name }));
-
   const busOptions = [{ label: 'Select All', value: 'SELECT_ALL' }, ...buses];
   const routeOptions = [{ label: 'Select All', value: 'SELECT_ALL' }, ...routes];
-
-  const plantOptions = [
-    { label: 'Select All', value: 'SELECT_ALL' },
-    ...plants.map((p) => ({ label: p.plant_name, value: p.id })),
-  ];
+  const plantOptions = [{ label: 'Select All', value: 'SELECT_ALL' }, ...plants];
 
   const handlePlantChange = (event, newValue) => {
     const isSelectAllSelected = newValue.some((opt) => opt.value === 'SELECT_ALL');
-    const allPlantValues = plants.map((p) => p.id);
+    const allPlantValues = plants.map((p) => p.value);
 
     if (isSelectAllSelected) {
       if (filterData.plants?.length === plants.length) {
@@ -49,11 +43,12 @@ function FilterOption({
       setFilterData({ ...filterData, plants: filtered.map((p) => p.value) });
     }
   };
+
   const getPlantDisplayValue = () => {
     if (!filterData.plants || filterData.plants.length === 0) return [];
     if (filterData.plants.length === plants.length) return [{ label: 'Select All', value: 'SELECT_ALL' }];
 
-    return plantOptions.filter((p) => p.value !== 'SELECT_ALL' && filterData.plants.includes(p.value));
+    return plants.filter((p) => filterData.plants.includes(p.value));
   };
 
   const handleChange = (event) => {
@@ -258,12 +253,16 @@ function FilterOption({
                 fullWidth
                 disableCloseOnSelect
                 renderInput={(params) => <TextField {...params} label='Select Plant' />}
-                isOptionEqualToValue={(option, value) => option.value === value.value}
-                getOptionLabel={(option) => option.label}
+                isOptionEqualToValue={(option, value) => option?.value === value?.value}
+                getOptionLabel={(option) => {
+                  if (option && typeof option.label === 'string') return option.label;
+                  if (option && option.value === 'SELECT_ALL') return 'Select All';
+                  return '';
+                }}
                 onChange={handlePlantChange}
-                value={getPlantDisplayValue()}
+                value={getPlantDisplayValue().filter((opt) => opt && typeof opt.value !== 'undefined')}
                 renderOption={(props, option) => (
-                  <li {...props}>
+                  <li {...props} key={option?.value ?? option?.label ?? Math.random()}>
                     <Checkbox
                       style={{ marginRight: 8 }}
                       checked={
@@ -272,54 +271,9 @@ function FilterOption({
                           : filterData.plants?.includes(option.value)
                       }
                     />
-                    {option.label}
+                    {option.label || (option.value === 'SELECT_ALL' ? 'Select All' : '')}
                   </li>
                 )}
-              />
-            )}
-
-            {routes.length > 0 && (
-              <Autocomplete
-                multiple
-                disablePortal
-                options={routeOptions}
-                size='small'
-                fullWidth
-                disableCloseOnSelect
-                renderInput={(params) => <TextField {...params} label='Select Route' />}
-                isOptionEqualToValue={(option, value) => option.value === value.value}
-                getOptionLabel={(option) => option.label}
-                onChange={handleRouteChange}
-                value={getRouteDisplayValue()}
-                renderOption={(props, option) => (
-                  <li {...props}>
-                    <Checkbox
-                      style={{ marginRight: 8 }}
-                      checked={
-                        option.value === 'SELECT_ALL'
-                          ? filterData.route?.length === routes.length
-                          : filterData.route?.includes(option.value)
-                      }
-                    />
-                    {option.label}
-                  </li>
-                )}
-              />
-            )}
-
-            {busRoutes.length > 0 && (
-              <Autocomplete
-                disablePortal
-                options={busRoutes}
-                size='small'
-                fullWidth
-                renderInput={(params) => <TextField {...params} label='Select Vehicle Route' />}
-                isOptionEqualToValue={(option, value) => option.value === value}
-                getOptionLabel={(option) => option.label}
-                onChange={(event, newValue) => {
-                  setFilterData({ ...filterData, busRoute: newValue ? newValue.value : '' });
-                }}
-                value={busRoutes.find((opt) => opt.value === filterData.busRoute) || null}
               />
             )}
 
@@ -344,6 +298,35 @@ function FilterOption({
                         option.value === 'SELECT_ALL'
                           ? filterData.bus?.length === buses.length
                           : filterData.bus?.includes(option.value)
+                      }
+                    />
+                    {option.label}
+                  </li>
+                )}
+              />
+            )}
+
+            {routes.length > 0 && (
+              <Autocomplete
+                multiple
+                disablePortal
+                options={routeOptions}
+                size='small'
+                fullWidth
+                disableCloseOnSelect
+                renderInput={(params) => <TextField {...params} label='Select Vehicle Route' />}
+                isOptionEqualToValue={(option, value) => option.value === value.value}
+                getOptionLabel={(option) => option.label}
+                onChange={handleRouteChange}
+                value={getRouteDisplayValue()}
+                renderOption={(props, option) => (
+                  <li {...props}>
+                    <Checkbox
+                      style={{ marginRight: 8 }}
+                      checked={
+                        option.value === 'SELECT_ALL'
+                          ? filterData.route?.length === routes.length
+                          : filterData.route?.includes(option.value)
                       }
                     />
                     {option.label}

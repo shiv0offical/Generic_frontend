@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
-import ReportTable from '../../../../components/table/ReportTable';
-import moment from 'moment-timezone';
-import FilterOption from '../../../../components/FilterOption';
-import CustomTab from '../components/CustomTab';
-import tabs from '../components/Tab';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllVehicleData } from '../../../../redux/vehicleReportSlice';
-import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
-import { toast } from 'react-toastify';
-import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import moment from 'moment';
+import * as XLSX from 'xlsx';
+import tabs from '../components/Tab';
+import { toast } from 'react-toastify';
 import autoTable from 'jspdf-autotable';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import CustomTab from '../components/CustomTab';
+import { useDispatch, useSelector } from 'react-redux';
+import FilterOption from '../../../../components/FilterOption';
+import ReportTable from '../../../../components/table/ReportTable';
+import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
+import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -54,10 +54,16 @@ const columns = [
 ];
 
 const interValOptions = [
-  { label: '1M', value: '1' },
-  { label: '5M', value: '5' },
-  { label: '10M', value: '10' },
-  { label: '25M', value: '25' },
+  { label: '5 Min', value: '5' },
+  { label: '10 Min', value: '10' },
+  { label: '20 Min', value: '20' },
+  { label: '30 Min', value: '30' },
+  { label: '1 Hour', value: '60' },
+  { label: '2 Hour', value: '120' },
+  { label: '4 Hour', value: '240' },
+  { label: '8 Hour', value: '480' },
+  { label: '16 Hour', value: '960' },
+  { label: '24 Hour', value: '1440' },
 ];
 
 function Parked() {
@@ -65,12 +71,12 @@ function Parked() {
   const navigate = useNavigate();
 
   const company_id = localStorage.getItem('company_id');
-  const { allVehicledata } = useSelector((state) => state?.vehicleReport);
+  const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
 
-  const buses =
-    allVehicledata?.data?.map((vehicle, index) => ({
-      label: vehicle.vehicle_name || vehicle.vehicle_number,
-      value: vehicle.id,
+  const vehicleOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
     })) || [];
 
   const [filterData, setFilterData] = useState({ bus: '', interval: '', fromDate: '', toDate: '' });
@@ -79,15 +85,17 @@ function Parked() {
   useEffect(() => {
     if (company_id) {
       const today = moment().format('YYYY-MM-DD');
-      dispatch(fetchAllVehicleData({ company_id }));
-      dispatch(fetchVehicleActivityData({ company_id, vehicle_id: '', from: today, to: today })).then((res) => {
-        if (res?.payload?.status === 200) {
-          setFilteredData(res?.payload?.data || []);
-        } else {
-          console.error('API Error:', res?.payload?.message);
-          setFilteredData([]); // clear on error if needed
+      dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+      dispatch(fetchVehicleActivityData({ company_id, vehicle_id: '', from: today, to: today, type: 'parked' })).then(
+        (res) => {
+          if (res?.payload?.status === 200) {
+            setFilteredData(res?.payload?.data || []);
+          } else {
+            console.error('API Error:', res?.payload?.message);
+            setFilteredData([]); // clear on error if needed
+          }
         }
-      });
+      );
     }
   }, [dispatch, company_id]);
 
@@ -176,13 +184,11 @@ function Parked() {
     const payload = {
       company_id,
       vehicle_id: filterData.bus,
-      // vehicle_id: "cmawix9lz000dui9oehg6rd8m",
       from: moment(filterData.fromDate).format('YYYY-MM-DD'),
       to: moment(filterData.toDate).format('YYYY-MM-DD'),
       type: 'parked',
     };
     dispatch(fetchVehicleActivityData(payload)).then((res) => {
-      console.log(res, 'res');
       if (res?.payload?.status == 200) {
         setFilteredData(res?.payload?.data);
         toast.success(res?.payload?.message);
@@ -214,7 +220,7 @@ function Parked() {
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
-        buses={buses}
+        buses={vehicleOptions}
         interValOptions={interValOptions}
       />
       <ReportTable columns={columns} data={filteredData} handleView={handleView} />

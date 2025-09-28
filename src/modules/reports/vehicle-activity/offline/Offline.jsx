@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import ReportTable from '../../../../components/table/ReportTable';
-import FilterOption from '../../../../components/FilterOption';
-import CustomTab from '../components/CustomTab';
-import tabs from '../components/Tab';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllVehicleData } from '../../../../redux/vehicleReportSlice';
-import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
-import { toast } from 'react-toastify';
+import jsPDF from 'jspdf';
 import moment from 'moment';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import tabs from '../components/Tab';
+import { toast } from 'react-toastify';
 import autoTable from 'jspdf-autotable';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomTab from '../components/CustomTab';
+import { useDispatch, useSelector } from 'react-redux';
+import FilterOption from '../../../../components/FilterOption';
+import ReportTable from '../../../../components/table/ReportTable';
+import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
+import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -19,25 +19,7 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('en-IN');
 };
 
-function formatDateTime(isoString) {
-  if (!isoString) return '';
-
-  const dateObj = new Date(isoString);
-
-  const date = dateObj.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-
-  const time = dateObj.toLocaleTimeString('en-IN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-
-  return `${date} ${time}`;
-}
+const formatDateTime = (date) => moment(date).format('YYYY-MM-DD HH:mm:ss');
 
 const columns = [
   { key: 'created_at', header: 'Date & Time', render: (_ignored, row) => formatDateTime(row?.created_at) },
@@ -81,18 +63,23 @@ const columns = [
     key: 'lat_long',
     header: 'Lat-Long',
     render: (_ignored, row) => {
-      if (row?.latitude && row?.longitude) {
-        return `${row.latitude}, ${row.longitude}`;
+      if (row?.lastVehicleData?.latitude && row?.lastVehicleData?.longitude) {
+        return `${row.lastVehicleData.latitude} - ${row.lastVehicleData.longitude}`;
       }
       return '';
     },
   },
   {
+    key: 'nearest_location',
+    header: 'Nearest Location',
+    render: (_ignored, row) => row?.loaction || '',
+  },
+  {
     key: 'gmap',
     header: 'G-Map',
     render: (_ignored, row) => {
-      if (row?.latitude && row?.longitude) {
-        const url = `https://maps.google.com/?q=${row.latitude},${row.longitude}`;
+      if (row?.lastVehicleData?.latitude && row?.lastVehicleData?.longitude) {
+        const url = `https://www.google.com/maps?q=${row.lastVehicleData.latitude},${row.lastVehicleData.longitude}`;
         return (
           <a
             href={url}
@@ -108,42 +95,58 @@ const columns = [
   },
 ];
 
+const interValOptions = [
+  { label: '5 Min', value: '5' },
+  { label: '10 Min', value: '10' },
+  { label: '20 Min', value: '20' },
+  { label: '30 Min', value: '30' },
+  { label: '1 Hour', value: '60' },
+  { label: '2 Hour', value: '120' },
+  { label: '4 Hour', value: '240' },
+  { label: '8 Hour', value: '480' },
+  { label: '16 Hour', value: '960' },
+  { label: '24 Hour', value: '1440' },
+];
+
 function Offline() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const company_id = localStorage.getItem('company_id');
-  const { allVehicledata } = useSelector((state) => state?.vehicleReport);
+  const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
 
-  const buses =
-    allVehicledata?.data?.map((vehicle, index) => ({
-      label: vehicle.vehicle_name || vehicle.vehicle_number,
-      value: vehicle.id,
+  // vehicleOptions similar to Parked.jsx
+  const vehicleOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
     })) || [];
 
   const [filterData, setFilterData] = useState({ bus: '', interval: '', fromDate: '', toDate: '' });
-
   const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
     if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
       const today = moment().format('YYYY-MM-DD');
-
-      dispatch(fetchAllVehicleData({ company_id }));
-
-      dispatch(fetchVehicleActivityData({ company_id, vehicle_id: '', from: today, to: today })).then((res) => {
-        if (res?.payload?.status === 200) {
-          setFilteredData(res?.payload?.data || []);
-        } else {
-          console.error('API Error:', res?.payload?.message);
-          setFilteredData([]); // clear on error if needed
+      dispatch(fetchVehicleActivityData({ company_id, vehicle_id: '', from: today, to: today, type: 'offline' })).then(
+        (res) => {
+          if (res?.payload?.status === 200) {
+            setFilteredData(res?.payload?.data || []);
+          } else {
+            console.error('API Error:', res?.payload?.message);
+            setFilteredData([]); // clear on error if needed
+          }
         }
-      });
+      );
     }
   }, [dispatch, company_id]);
 
   const handleExport = () => {
     const exportData = filteredData.map((row) => {
+      const lat = row?.lastVehicleData?.latitude || '';
+      const lng = row?.lastVehicleData?.longitude || '';
+      const gmapUrl = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : '';
       return {
         'Date & Time': formatDateTime(row?.created_at),
         'Vehicle Type': row?.vehicle_type || '',
@@ -151,16 +154,19 @@ function Offline() {
         'Route Details': row?.Vehicle_Route?.route_number || row?.Vehicle_Route?.route_name || '',
         'Driver Name': `${row?.vehicle_driver?.first_name || ''} ${row?.vehicle_driver?.last_name || ''}`.trim(),
         'Driver Contact Number': row?.vehicle_driver?.phone_number || '',
-        'Total Offline Duration': formatDate(row?.total_offline_duration) || '',
-        'Max Offline Duration': formatDate(row?.max_offline_duration) || '',
+        'Start Time': formatDate(row?.start_time) || '',
+        'End Time': formatDate(row?.end_time) || '',
+        'Total Offline Duration': row?.total_offline_duration || '',
+        'Max Offline Duration': row?.max_offline_duration || '',
         'No. of Offline': row?.noOffline || '',
+        'Lat-Long': `${lat} - ${lng}`,
+        'Nearest Location': row?.loaction || '',
+        'G-Map': gmapUrl,
       };
     });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
-    worksheet['!cols'] = new Array(Object.keys(exportData[0] || {}).length).fill({
-      wch: 20,
-    });
+    worksheet['!cols'] = new Array(Object.keys(exportData[0] || {}).length).fill({ wch: 25 });
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Offline Report');
@@ -170,20 +176,6 @@ function Offline() {
   const handleExportPDF = () => {
     const doc = new jsPDF();
 
-    const tableData = filteredData.map((row) => {
-      return [
-        formatDateTime(row?.created_at),
-        row?.vehicle_type || '',
-        row?.vehicle_number || '',
-        row?.Vehicle_Route?.route_number || row?.Vehicle_Route?.route_name || '',
-        `${row?.vehicle_driver?.first_name || ''} ${row?.vehicle_driver?.last_name || ''}`.trim(),
-        row?.vehicle_driver?.phone_number || '',
-        formatDate(row?.total_offline_duration) || '',
-        formatDate(row?.max_offline_duration) || '',
-        row?.noOffline || '',
-      ];
-    });
-
     const tableHeaders = [
       'Date & Time',
       'Vehicle Type',
@@ -191,15 +183,42 @@ function Offline() {
       'Route Details',
       'Driver Name',
       'Driver Contact Number',
+      'Start Time',
+      'End Time',
       'Total Offline Duration',
       'Max Offline Duration',
       'No. of Offline',
+      'Lat-Long',
+      'Nearest Location',
+      'G-Map',
     ];
+
+    const tableData = filteredData.map((row) => {
+      const lat = row?.lastVehicleData?.latitude || '';
+      const lng = row?.lastVehicleData?.longitude || '';
+      const gmapUrl = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : '';
+      return [
+        formatDateTime(row?.created_at),
+        row?.vehicle_type || '',
+        row?.vehicle_number || '',
+        row?.Vehicle_Route?.route_number || row?.Vehicle_Route?.route_name || '',
+        `${row?.vehicle_driver?.first_name || ''} ${row?.vehicle_driver?.last_name || ''}`.trim(),
+        row?.vehicle_driver?.phone_number || '',
+        formatDate(row?.start_time) || '',
+        formatDate(row?.end_time) || '',
+        row?.total_offline_duration || '',
+        row?.max_offline_duration || '',
+        row?.noOffline || '',
+        `${lat} - ${lng}`,
+        row?.loaction || '',
+        gmapUrl,
+      ];
+    });
 
     autoTable(doc, {
       head: [tableHeaders],
       body: tableData,
-      styles: { fontSize: 7 },
+      styles: { fontSize: 6 },
       headStyles: { fillColor: [7, 22, 61] },
       startY: 20,
       margin: { left: 10, right: 10 },
@@ -213,10 +232,10 @@ function Offline() {
     const payload = {
       company_id,
       vehicle_id: filterData.bus,
-      //vehicle_id: "cmawix9lz000dui9oehg6rd8m",
       from: moment(filterData.fromDate).format('YYYY-MM-DD'),
       to: moment(filterData.toDate).format('YYYY-MM-DD'),
       type: 'offline',
+      interval: filterData.interval,
     };
     dispatch(fetchVehicleActivityData(payload)).then((res) => {
       if (res?.payload?.status == 200) {
@@ -255,7 +274,8 @@ function Offline() {
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
-        buses={buses}
+        buses={vehicleOptions}
+        interValOptions={interValOptions}
       />
       <ReportTable columns={columns} data={filteredData} handleView={handleView} />
     </div>

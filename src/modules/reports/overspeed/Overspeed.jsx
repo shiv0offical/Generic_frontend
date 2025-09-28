@@ -65,7 +65,7 @@ function Overspeed() {
   }, [dispatch, page, limit]);
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
   }, [dispatch, company_id]);
 
   const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
@@ -93,13 +93,17 @@ function Overspeed() {
 
   const [filterData, setFilterData] = useState({ busRouteNo: '', fromDate: '', toDate: '' });
 
-  const routeOptions = Array.isArray(vehicleRoutes?.routes)
-    ? vehicleRoutes.routes.map((route) => {
-        const vehicleNumber = route?.vehicle?.vehicle_number || route?.route_number || 'N/A';
-        const routeName = route?.name || 'N/A';
-        return { label: `Route ${vehicleNumber} - ${routeName}`, value: route?.id };
-      })
-    : [];
+  const routeOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Route  - ${route?.name || 'N/A'}`,
+      value: route?.id,
+    })) || [];
+
+  const busOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
+    })) || [];
 
   const handleExport = () => {
     // Add your export logic here
@@ -108,7 +112,12 @@ function Overspeed() {
 
   const handleFormSubmit = (event) => {
     event.preventDefault();
-    const payload = { company_id, vehicle_id: filterData.busRouteNo, from: filterData.fromDate, to: filterData.toDate };
+    const payload = {
+      company_id,
+      vehicle_id: filterData.busRouteNo,
+      from: filterData.fromDate,
+      to: filterData.toDate,
+    };
     dispatch(fetchOverSpeedReport(payload)).then((res) => {
       console.log(res, 'res');
       if (res?.payload?.status == 200) {
@@ -138,7 +147,8 @@ function Overspeed() {
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
-        busRouteNo={routeOptions}
+        routes={routeOptions}
+        buses={busOptions}
       />
 
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>

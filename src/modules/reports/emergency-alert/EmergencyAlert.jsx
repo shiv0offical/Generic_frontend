@@ -1,9 +1,9 @@
-import moment from 'moment-timezone';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import ReportTable from '../../../components/table/ReportTable';
-import { fetchEmergencyReportAlert } from '../../../redux/emergencyReportAlertSlice';
 import FilterOption from '../../../components/FilterOption';
+import ReportTable from '../../../components/table/ReportTable';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchEmergencyReportAlert } from '../../../redux/emergencyReportAlertSlice';
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -40,40 +40,57 @@ const columns = [
   },
   { key: 'issuedRaised', header: 'Issue Raised' },
   { key: 'actionNote', header: 'Action Note' },
-  { key: 'updated_at', header: 'Update Date' },
+  { key: 'updated_at', header: 'Update Date', render: (_ignored, row) => formatDate(row?.updated_at) },
 ];
 
 function EmergencyAlert() {
   const dispatch = useDispatch();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
+  const company_id = localStorage.getItem('company_id');
 
   const { emergencyReportAlertData, loading, error } = useSelector((state) => state?.emergencyReportAlert);
+  const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
+
   useEffect(() => {
     dispatch(fetchEmergencyReportAlert({ page: page + 1, limit }));
-  }, [dispatch, page, limit]);
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+  }, [dispatch, page, limit, company_id]);
+
+  const vehicleOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
+    })) || [];
+
+  const routeOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Route  - ${route?.name || 'N/A'}`,
+      value: route?.id,
+    })) || [];
 
   const tableData = Array.isArray(emergencyReportAlertData?.data)
     ? emergencyReportAlertData.data.map((item) => {
         const latitude = item.latitude ?? '';
         const longitude = item.longitude ?? '';
         return {
-          date: item.created_at ? moment(item.created_at).format('YYYY-MM-DD hh:mm A') : '',
-          vehicleNo: item.vehicle_number || 'N/A',
-          routeDetails: item.route_number || '-',
-          driverName: item.driver?.name || '-',
-          driverNumber: item.driver?.mobile || '0',
-          employeeName: item.employe?.name || '-',
-          employeeId: item.employe?.employee_id || '-',
+          date: item.created_at ? item.created_at : '',
+          vehicleNo: item.vehicle_number || '',
+          // Show route name in routeDetails
+          routeDetails: item.name || '',
+          driverName: item.driver?.name || '',
+          driverNumber: item.driver?.mobile || '', // keep driver number
+          employeeName: item.employe?.name || '',
+          employeeId: item.employe?.id || '',
           plant: item.plant_name || '',
-          department: item.department_name || '-',
+          department: item.department_name || '',
           latitude,
           longitude,
           latlong: latitude && longitude ? `${latitude}, ${longitude}` : '',
           gmap: latitude && longitude ? `https://maps.google.com/?q=${latitude},${longitude}` : '',
           issuedRaised: item.title || '',
           actionNote: item.action_taken || '',
-          updated_at: item.updated_at ? moment(item.updated_at).format('YYYY-MM-DD hh:mm A') : '',
+          updated_at: item.updated_at ? item.updated_at : '',
         };
       })
     : [];
@@ -89,11 +106,10 @@ function EmergencyAlert() {
 
   const handleFormSubmit = (event) => {
     event.preventDefault();
-    const company_id = localStorage.getItem('company_id');
     const payload = {
       company_id,
-      start: new Date(filterData.fromDate).toISOString(),
-      end: new Date(filterData.toDate).toISOString(),
+      start: filterData.fromDate ? new Date(filterData.fromDate).toISOString() : '',
+      end: filterData.toDate ? new Date(filterData.toDate).toISOString() : '',
     };
     dispatch(fetchEmergencyReportAlert(payload));
   };
@@ -116,6 +132,8 @@ function EmergencyAlert() {
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
+        routes={routeOptions}
+        buses={vehicleOptions}
       />
       <ReportTable
         columns={columns}

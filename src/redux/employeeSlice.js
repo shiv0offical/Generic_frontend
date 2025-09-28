@@ -76,9 +76,9 @@ export const fetchEmployeeOnboard = createAsyncThunk(
 // Async thunk for fetching all employee details
 export const fetchAllEmployeeDetails = createAsyncThunk(
   'employee/fetchAllEmployeeDetails',
-  async ({ company_id }, { rejectWithValue }) => {
+  async ({ company_id, page = 1, limit = 1000 }, { rejectWithValue }) => {
     try {
-      const response = await ApiService.get('employee', { company_id });
+      const response = await ApiService.get('employe', { company_id, page, limit });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');

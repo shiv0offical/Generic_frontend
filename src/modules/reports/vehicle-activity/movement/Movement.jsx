@@ -1,25 +1,31 @@
-import moment from 'moment-timezone';
+import jsPDF from 'jspdf';
+import moment from 'moment';
+import * as XLSX from 'xlsx';
 import tabs from '../components/Tab';
 import { toast } from 'react-toastify';
+import autoTable from 'jspdf-autotable';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomTab from '../components/CustomTab';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../../components/FilterOption';
 import ReportTable from '../../../../components/table/ReportTable';
-import { fetchAllVehicleData } from '../../../../redux/vehicleReportSlice';
+import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
-import jsPDF from 'jspdf';
-import * as XLSX from 'xlsx';
-import autoTable from 'jspdf-autotable';
 
 const formatDateTime = (date) => moment(date).format('YYYY-MM-DD HH:mm:ss');
 
 const interValOptions = [
-  { label: '1M', value: '1' },
-  { label: '5M', value: '5' },
-  { label: '10M', value: '10' },
-  { label: '25M', value: '25' },
+  { label: '5 Min', value: '5' },
+  { label: '10 Min', value: '10' },
+  { label: '20 Min', value: '20' },
+  { label: '30 Min', value: '30' },
+  { label: '1 Hour', value: '60' },
+  { label: '2 Hour', value: '120' },
+  { label: '4 Hour', value: '240' },
+  { label: '8 Hour', value: '480' },
+  { label: '16 Hour', value: '960' },
+  { label: '24 Hour', value: '1440' },
 ];
 
 const columns = [
@@ -81,7 +87,7 @@ function Movement() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { vehicleActivityData, loading, error } = useSelector((state) => state?.vehicleActivity || {});
+  const { vehicleActivityData } = useSelector((state) => state?.vehicleActivity || {});
 
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -90,25 +96,19 @@ function Movement() {
     dispatch(fetchVehicleActivityData({ page: page + 1 || page, limit }));
   }, [dispatch, page, limit]);
 
-  // const tableData = vehicleActivityData?.data?.length ? vehicleActivityData.data : dummyData;
   const totalCount = vehicleActivityData?.pagination?.total;
 
   const company_id = localStorage.getItem('company_id');
 
-  const { allVehicledata } = useSelector((state) => state?.vehicleReport);
+  const { vehicleRoutes } = useSelector((state) => state?.vehicleRoute);
+
   const [filterData, setFilterData] = useState({ bus: '', interval: '', fromDate: '', toDate: '' });
   const [filteredData, setFilteredData] = useState([]);
-
-  const buses =
-    allVehicledata?.data?.map((vehicle, index) => ({
-      label: vehicle.vehicle_name || vehicle.vehicle_number,
-      value: vehicle.id,
-    })) || [];
 
   useEffect(() => {
     if (company_id) {
       const today = moment().format('YYYY-MM-DD');
-      dispatch(fetchAllVehicleData({ company_id }));
+      dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
       dispatch(fetchVehicleActivityData({ company_id, vehicle_id: '', from: today, to: today })).then((res) => {
         if (res?.payload?.status === 200) {
           setFilteredData(res?.payload?.data || []);
@@ -116,6 +116,12 @@ function Movement() {
       });
     }
   }, [dispatch, company_id]);
+
+  const vehicleOptions =
+    vehicleRoutes?.routes?.map((route) => ({
+      label: `Vehicle - ${route?.vehicle?.vehicle_number || 'N/A'}`,
+      value: route?.id,
+    })) || [];
 
   const handleExportExcel = () => {
     const exportData = filteredData.map((row) => ({
@@ -262,7 +268,7 @@ function Movement() {
         filterData={filterData}
         setFilterData={setFilterData}
         handleFormReset={handleFormReset}
-        buses={buses}
+        buses={vehicleOptions}
         interValOptions={interValOptions}
       />
       <ReportTable
