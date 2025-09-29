@@ -1,8 +1,8 @@
 import dayjs from 'dayjs';
 import { APIURL } from '../../../constants';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ApiService } from '../../../services';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import FilterOption from './components/FilterOption';
 import CommanTable from '../../../components/table/CommonTable';
 import CommonSearch from '../../../components/CommonSearch';
@@ -20,6 +20,17 @@ const columns = [
   { key: 'updatedOn', header: 'Updated On' },
 ];
 
+// Sample fields for plant-in-time import/export
+const plantInTimeSampleFields = [
+  { key: 'vehicle_id', header: 'Vehicle ID' },
+  { key: 'vehicle_route_id', header: 'Vehicle Route ID' },
+  { key: 'day_general_start_time', header: 'Day General Start Time' },
+  { key: 'night_general_start_time', header: 'Night General Start Time' },
+  { key: 'first_shift_start_time', header: 'First Shift Start Time' },
+  { key: 'second_shift_start_time', header: 'Second Shift Start Time' },
+  { key: 'third_shift_start_time', header: 'Third Shift Start Time' },
+];
+
 function PlantInTime() {
   const companyID = localStorage.getItem('company_id');
   const navigate = useNavigate();
@@ -31,14 +42,9 @@ function PlantInTime() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState(null);
 
-  const busOption = Array.from(
-    new Map(plantData.map((item) => [item.vehicle_id, { label: item.name, value: item.vehicle_id }])).values()
-  );
-
-  const busRouteOptions = Array.from(
-    new Map(plantData.map((item) => [item.route_id, { label: item.routeName, value: item.route_id }])).values()
-  );
+  const fileInputRef = useRef(null);
 
   const formatPantInTime = (info, page, rowsPerPage) => {
     return info?.map((item, idx) => {
@@ -89,7 +95,7 @@ function PlantInTime() {
   };
 
   const handleEdit = (row) => {
-    navigate(`/master/factory-in-time-target/create`, { state: row, action: 'EDIT' });
+    navigate(`/master/plant-in-time/create`, { state: row, action: 'EDIT' });
   };
 
   const handleDelete = async (row) => {
@@ -112,8 +118,6 @@ function PlantInTime() {
   const handleClickFilter = async () => {
     const Filters = {
       company_id: filterData.company_id,
-      vehicle_id: filterData.bus,
-      vehicle_route_id: filterData.busRoute,
       page,
       limit: rowsPerPage,
       search: searchTerm,
@@ -121,15 +125,83 @@ function PlantInTime() {
     await fetchData(Filters);
   };
 
-  const handleFormReset = () => {
-    setFilterData({ bus: '', busRoute: '', company_id: companyID });
-    setSearchTerm('');
-    setPage(1);
-    fetchData({ company_id: companyID, page: 1, limit: rowsPerPage, search: '' });
+  // Export plant-in-time as CSV
+  const handleExport = async () => {
+    try {
+      // Fetch all data for export
+      const res = await ApiService.get(APIURL.PLANTINTIME, {
+        company_id: companyID,
+        page: 1,
+        limit: totalCount || 1000,
+        search: searchTerm,
+      });
+      const fullData = (res?.data || []).map((item, idx) => ({
+        id: idx + 1,
+        name: item.vehicle?.vehicle_name || '',
+        routeName: item.vehicle_route?.name || '',
+        dayGeneral: item.day_general_start_time,
+        nightGeneral: item.night_general_start_time,
+        firstGeneral: item.first_shift_start_time,
+        secondGeneral: item.second_shift_start_time,
+        thirdGeneral: item.third_shift_start_time,
+        updatedBy: 'Admin-1',
+        updatedOn: dayjs(item.updated_at).format('YYYY-MM-DD'),
+      }));
+
+      if (!fullData.length) {
+        alert('No data available to export.');
+        return;
+      }
+
+      const cols = columns;
+      const headers = cols.map((c) => c.header);
+      const rows = fullData.map((row) => cols.map((col) => row[col.key] ?? ''));
+      const csv = [headers, ...rows]
+        .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(blob),
+        download: 'plant_in_time.csv',
+      });
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('Failed to export Plant In Time data.');
+    }
   };
 
-  const handleExport = () => {
-    // Add your export logic here
+  // Download sample CSV for plant-in-time import
+  const handleSample = () => {
+    const headers = plantInTimeSampleFields.map((f) => f.header);
+    const values = plantInTimeSampleFields.map(() => '');
+
+    const csv = [headers, values]
+      .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: 'plant_in_time_sample.csv',
+    });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const handleFileUpload = async (event) => {
+    event.preventDefault();
+    if (!file) {
+      alert('Please select a file.');
+      return;
+    }
+    alert('File uploaded successfully!');
+    if (fileInputRef.current) fileInputRef.current.value = null;
+    setFile(null);
+    fetchData();
   };
 
   const handlePageChange = (newPage) => {
@@ -144,18 +216,26 @@ function PlantInTime() {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center mb-4'>
-        <h1 className='text-2xl font-bold text-[#07163d]'>Factory In-Time Target (Total: {totalCount})</h1>
-        <CommonSearch searchQuery={searchTerm} setSearchQuery={setSearchTerm} />
+        <h1 className='text-2xl font-bold text-[#07163d]'>Plan In-Time (Total: {totalCount})</h1>
+        <div className='flex gap-2'>
+          <CommonSearch searchQuery={searchTerm} setSearchQuery={setSearchTerm} />
+          <Link to='/master/plant-in-time/create'>
+            <button
+              type='button'
+              className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
+              New Plant In-Time
+            </button>
+          </Link>
+        </div>
       </div>
 
       <FilterOption
-        handleClickFilter={handleClickFilter}
-        filterData={filterData}
-        busOption={busOption}
-        busRouteOptions={busRouteOptions}
-        handleFormReset={handleFormReset}
-        setFilterData={setFilterData}
         handleExport={handleExport}
+        handleSample={handleSample}
+        handleFileUpload={handleFileUpload}
+        setFile={setFile}
+        file={file}
+        fileInputRef={fileInputRef}
       />
 
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>

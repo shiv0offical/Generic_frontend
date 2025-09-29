@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { APIURL } from '../../../constants';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ApiService } from '../../../services';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -11,8 +11,12 @@ import CommonSearch from '../../../components/CommonSearch';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import { Table, TableBody, TableCell, TableContainer } from '@mui/material';
 import { TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDepartments } from '../../../redux/departmentSlice';
+import { fetchEmployees } from '../../../redux/employeeSlice';
 
 function Employee() {
+  const dispatch = useDispatch();
   const fileInputRef = useRef();
   const navigate = useNavigate();
   const companyID = localStorage.getItem('company_id');
@@ -20,7 +24,6 @@ function Employee() {
   const [page, setPage] = useState(0);
   const [file, setFile] = useState(null);
   const [order, setOrder] = useState('asc');
-  const [empData, setEmpData] = useState([]);
   const [orderBy, setOrderBy] = useState('');
   const [totalCount, setTotalCount] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -97,7 +100,6 @@ function Employee() {
       if (res?.success) {
         const offset = (apiPage - 1) * customRowsPerPage;
         const formatted = formatEmp(res.data?.employes || [], offset);
-        setEmpData(formatted);
         setDisplayData(formatted);
         setTotalCount(res.data?.pagination?.total || 0);
       }
@@ -159,7 +161,6 @@ function Employee() {
       if (res?.success) {
         const offset = 0;
         const formatted = formatEmp(res.data?.employes || [], offset);
-        setEmpData(formatted);
         setDisplayData(formatted);
         setTotalCount(res.data?.pagination?.total || 0);
         setPage(0);
@@ -305,8 +306,13 @@ function Employee() {
     link.remove();
   };
 
+  const { employees } = useSelector((s) => s.employee);
+  const { departments } = useSelector((s) => s.department);
+
   useEffect(() => {
     fetchData(page, rowsPerPage, searchQuery);
+    dispatch(fetchEmployees({ company_id: companyID, limit: 2000 }));
+    dispatch(fetchDepartments({ limit: 20 }));
     // eslint-disable-next-line
   }, [
     page,
@@ -341,15 +347,26 @@ function Employee() {
     }),
   ];
 
-  const departmentOption = Array.from(
-    new Map(empData.map((e) => [e.departmentId, { label: e.department, value: e.departmentId }])).values()
-  ).filter((opt) => opt.value);
+  const employeeOptions =
+    employees?.employes?.map((emp) => ({ label: `${emp.employee_id} - ${emp.first_name}`, value: emp.employee_id })) ||
+    [];
+
+  const departmentOptions = departments?.map((dep) => ({ label: dep.department_name, value: dep.id })) || [];
 
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between mb-4'>
         <h1 className='text-2xl font-bold text-[#07163d]'>Employee (Total: {totalCount})</h1>
-        <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <div className='flex gap-2'>
+          <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <Link to='/master/employee/create'>
+            <button
+              type='button'
+              className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
+              New Employee
+            </button>
+          </Link>
+        </div>
       </div>
 
       {isStatusModalOpen && selectedEmp && (
@@ -387,7 +404,8 @@ function Employee() {
         file={file}
         handleExport={handleExport}
         handleSample={handleSample}
-        departments={departmentOption}
+        departments={departmentOptions}
+        employees={employeeOptions}
       />
 
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>

@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useState, useEffect, useMemo } from 'react';
@@ -293,7 +293,16 @@ const Driver = () => {
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center mb-4'>
         <h1 className='text-2xl font-bold text-[#07163d]'>Driver (Total: {totalCount})</h1>
-        <CommonSearch searchQuery={searchTerm} setSearchQuery={setSearchTerm} />
+        <div className='flex gap-2'>
+          <CommonSearch searchQuery={searchTerm} setSearchQuery={setSearchTerm} />
+          <Link to='/master/driver/create'>
+            <button
+              type='button'
+              className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
+              New Driver
+            </button>
+          </Link>
+        </div>
       </div>
       {isStatusModalOpen && selectedDriver && (
         <IModal toggleModal={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)}>

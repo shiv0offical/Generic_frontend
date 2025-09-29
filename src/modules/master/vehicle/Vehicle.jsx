@@ -285,9 +285,18 @@ const Vehicle = () => {
 
   return (
     <div className='w-full h-full p-2'>
-      <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehicles (Total: {totalCount})</h1>
-        <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <div className='flex justify-between items-center mb-4'>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Vehicles (Total: {totalCount})</h1>
+        <div className='flex gap-2'>
+          <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <Link to='/master/vehicle/create'>
+            <button
+              type='button'
+              className='w-32 text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer'>
+              New Vehicle
+            </button>
+          </Link>
+        </div>
       </div>
 
       {isStatusModalOpen && selectedVehicle && (

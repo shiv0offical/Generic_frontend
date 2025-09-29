@@ -117,7 +117,7 @@ function PlantInTimeForm() {
 
       if (res.success) {
         console.log('🚀 ~ PlantInTimeForm.jsx:99 ~ handleFormSubmit ~ res:', res);
-        navigate('/master/factory-in-time-target');
+        navigate('/master/plant-in-time');
       } else {
         alert(res.message || 'Something went wrong.');
         console.error(response.message);
@@ -130,7 +130,7 @@ function PlantInTimeForm() {
 
       if (res.success) {
         console.log('🚀 ~ PlantInTimeForm.jsx:99 ~ handleFormSubmit ~ res:', res);
-        navigate('/master/factory-in-time-target');
+        navigate('/master/plant-in-time');
       } else {
         alert(res.message || 'Something went wrong.');
         console.error(response.message);
@@ -388,7 +388,7 @@ function PlantInTimeForm() {
                 className='text-white bg-[#07163d] hover:bg-[#07163d]/90 focus:ring-4 focus:outline-none focus:ring-[#07163d]/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
                 Save
               </button>
-              <Link to='/master/factory-in-time-target'>
+              <Link to='/master/plant-in-time'>
                 <button
                   type='button'
                   className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>

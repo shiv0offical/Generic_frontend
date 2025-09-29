@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import IModal from '../../../components/modal/Modal';
+import FilterOptions from './components/FilterOption';
 import { useDispatch, useSelector } from 'react-redux';
 import DepartmentForm from './components/DepartmentForm';
 import CommonSearch from '../../../components/CommonSearch';
@@ -14,6 +15,9 @@ const columns = [
   { key: 'createdAt', header: 'Created At' },
 ];
 
+// Sample fields for department import/export
+const departmentSampleFields = [{ key: 'department_name', header: 'Department Name' }];
+
 const Department = () => {
   const dispatch = useDispatch();
   const [page, setPage] = useState(1);
@@ -21,6 +25,9 @@ const Department = () => {
   const [selectedRow, setSelectedRow] = useState(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
+  const [file, setFile] = useState(null);
+
+  const fileInputRef = useRef(null);
 
   const { departments, pagination, loading } = useSelector((state) => state.department);
 
@@ -59,6 +66,100 @@ const Department = () => {
     });
   };
 
+  // --- Department FilterOption handlers (like Vehicle) ---
+
+  // Export departments as CSV
+  const handleExport = async () => {
+    try {
+      const res = await dispatch(
+        fetchDepartments({
+          page: 1,
+          limit: pagination?.total || 1000,
+          search: searchQuery,
+        })
+      ).unwrap();
+      const fullData = (res?.departments || []).map((item, idx) => ({
+        id: idx + 1,
+        name: item.department_name,
+        createdAt: dayjs(item.created_at).format('YYYY-MM-DD'),
+      }));
+
+      if (!fullData.length) {
+        alert('No data available to export.');
+        return;
+      }
+
+      const cols = columns;
+      const headers = cols.map((c) => c.header);
+
+      const rows = fullData.map((row) => cols.map((col) => row[col.key] ?? ''));
+
+      const csv = [headers, ...rows]
+        .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(blob),
+        download: 'departments.csv',
+      });
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('Failed to export departments.');
+    }
+  };
+
+  // Download sample CSV for department import
+  const handleSample = () => {
+    const headers = departmentSampleFields.map((f) => f.header);
+    const values = departmentSampleFields.map(() => '');
+
+    const csv = [headers, values]
+      .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: 'department_sample.csv',
+    });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  // Handle file upload for department import
+  const handleFileUpload = async (event) => {
+    event.preventDefault();
+    if (!file) {
+      alert('Please select a file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      // Replace with your actual API call for department import
+      // Example: const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=department`, formData);
+      // For now, just simulate success:
+      alert('File uploaded successfully!');
+      if (fileInputRef.current) fileInputRef.current.value = null;
+      setFile(null);
+      dispatch(fetchDepartments({ page, limit: rowsPerPage, search: searchQuery }));
+    } catch (error) {
+      alert('Upload failed.');
+    }
+  };
+
+  // Reset file input and file state
+  const handleFormReset = () => {
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = null;
+  };
+
   return (
     <div>
       <IModal
@@ -93,6 +194,16 @@ const Department = () => {
             </button>
           </div>
         </div>
+
+        <FilterOptions
+          handleFormReset={handleFormReset}
+          handleFileUpload={handleFileUpload}
+          setFile={setFile}
+          file={file}
+          handleExport={handleExport}
+          handleSample={handleSample}
+          fileInputRef={fileInputRef}
+        />
         <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
           <CommanTable
             columns={columns}

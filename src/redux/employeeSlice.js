@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { ApiService } from '../services';
+import { APIURL } from '../constants';
 
 // Async thunk for creating employee
 export const createEmployee = createAsyncThunk('employee/createEmployee', async (formData, { rejectWithValue }) => {
@@ -33,10 +34,23 @@ export const updateEmployee = createAsyncThunk(
 // Async thunk for fetching list of employees
 export const fetchEmployees = createAsyncThunk(
   'employee/fetchEmployees',
-  async ({ company_id }, { rejectWithValue }) => {
+  async ({ company_id, department, fromDate, toDate, page, limit, search }, { rejectWithValue }) => {
     try {
-      const query = new URLSearchParams({ company_id }).toString();
-      const response = await ApiService.get(`employee?${query}`);
+      const params = {
+        company_id,
+        department_id: department,
+        from_date: fromDate,
+        to_date: toDate,
+        page,
+        limit,
+        search: search?.trim() || undefined,
+      };
+
+      // Remove undefined values from params
+      Object.keys(params).forEach((key) => params[key] === undefined && delete params[key]);
+
+      const query = new URLSearchParams(params).toString();
+      const response = await ApiService.get(`${APIURL.EMPLOYEE}?${query}`);
 
       if (!response.success) return rejectWithValue(response.message || 'Failed to fetch employees');
 

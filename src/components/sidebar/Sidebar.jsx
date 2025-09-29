@@ -63,7 +63,7 @@ const settingsSubMenus = [
       { to: '/master/driver', label: 'Driver' },
       { to: '/master/departments', label: 'Departments' },
       { to: '/master/plants', label: 'Plants' },
-      { to: '/master/factory-in-time-target', label: 'Plant In Time' },
+      { to: '/master/plant-in-time', label: 'Plant In Time' },
     ],
   },
   {
