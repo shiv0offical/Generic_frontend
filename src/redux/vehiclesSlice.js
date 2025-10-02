@@ -3,20 +3,17 @@ import { ApiService } from '../services';
 import { APIURL } from '../constants';
 
 // Async thunk to fetch vehicles
-export const fetchVehicles = createAsyncThunk(
-  'vehicle/fetchVehicles',
-  async ({ page = 1, limit = 10, fromDate = '', toDate = '', search = '' }, { rejectWithValue }) => {
-    try {
-      const response = await ApiService.get(APIURL.VEHICLE, { page, limit, fromDate, toDate, search });
-      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch vehicles');
+export const fetchVehicles = createAsyncThunk('vehicle/fetchVehicles', async (params = {}, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.get(APIURL.VEHICLE, params);
+    if (!response.success) return rejectWithValue(response.message || 'Failed to fetch vehicles');
 
-      const { vehicles = [], pagination } = response.data;
-      return { vehicles, pagination };
-    } catch (error) {
-      return rejectWithValue(error.message || 'Network error');
-    }
+    const { vehicles = [], pagination } = response.data;
+    return { vehicles, pagination };
+  } catch (error) {
+    return rejectWithValue(error.message || 'Network error');
   }
-);
+});
 
 // Create Vehicle
 export const createVehicle = createAsyncThunk('vehicles/createVehicle', async (payload, { rejectWithValue }) => {

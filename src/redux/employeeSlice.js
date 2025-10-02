@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { ApiService } from '../services';
+import { APIURL } from '../constants';
 
 // Async thunk for creating employee
 export const createEmployee = createAsyncThunk('employee/createEmployee', async (formData, { rejectWithValue }) => {
@@ -31,14 +32,23 @@ export const updateEmployee = createAsyncThunk(
 );
 
 // Async thunk for fetching list of employees
-export const fetchEmployees = createAsyncThunk(
-  'employee/fetchEmployees',
-  async ({ company_id }, { rejectWithValue }) => {
-    try {
-      const query = new URLSearchParams({ company_id }).toString();
-      const response = await ApiService.get(`employee?${query}`);
+export const fetchEmployees = createAsyncThunk('employee/fetchEmployees', async (params, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.get(APIURL.EMPLOYEE, params);
+    if (!response.success) return rejectWithValue(response.message || 'Failed to fetch employees');
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.message || 'Something went wrong');
+  }
+});
 
-      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch employees');
+// Async thunk for fetching the list of employees for the reports
+export const fetchEmployeeOnboard = createAsyncThunk(
+  'employee/fetchEmployeeOnboard',
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.get('emponboard', params);
+      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch onboard employees');
 
       return response.data;
     } catch (error) {
@@ -47,24 +57,14 @@ export const fetchEmployees = createAsyncThunk(
   }
 );
 
-// Async thunk for fetching the list of employees for the reports
-export const fetchEmployeeOnboard = createAsyncThunk(
-  'employee/fetchEmployeeOnboard',
-  async ({ company_id, department_id, start, end, employee_id, vehicle_route_id, plant_id }, { rejectWithValue }) => {
+// Async thunk for fetching the destination arrival female report (like onboard)
+export const fetchDestinationArrivalFemale = createAsyncThunk(
+  'employee/fetchDestinationArrivalFemale',
+  async (params, { rejectWithValue }) => {
     try {
-      const queryParams = new URLSearchParams({
-        company_id,
-        department_id,
-        start,
-        end,
-        employee_id,
-        vehicle_route_id,
-        plant_id,
-      }).toString();
-
-      const response = await ApiService.get(`emponboard?${queryParams}`);
-
-      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch onboard employees');
+      const response = await ApiService.get('destinationarrivalfemale', params);
+      if (!response.success)
+        return rejectWithValue(response.message || 'Failed to fetch destination arrival female report');
 
       return response.data;
     } catch (error) {
@@ -76,9 +76,9 @@ export const fetchEmployeeOnboard = createAsyncThunk(
 // Async thunk for fetching all employee details
 export const fetchAllEmployeeDetails = createAsyncThunk(
   'employee/fetchAllEmployeeDetails',
-  async ({ company_id }, { rejectWithValue }) => {
+  async ({ company_id, page = 1, limit = 1000 }, { rejectWithValue }) => {
     try {
-      const response = await ApiService.get('employee', { company_id });
+      const response = await ApiService.get('employe', { company_id, page, limit });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
@@ -92,6 +92,7 @@ const initialState = {
   success: false,
   employees: [],
   onboardEmployees: [],
+  destinationArrivalFemales: [],
   getAllEmployeeDetails: [],
 };
 
@@ -158,6 +159,19 @@ const employeeSlice = createSlice({
         state.onboardEmployees = action.payload;
       })
       .addCase(fetchEmployeeOnboard.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // fetchDestinationArrivalFemale
+      .addCase(fetchDestinationArrivalFemale.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchDestinationArrivalFemale.fulfilled, (state, action) => {
+        state.loading = false;
+        state.destinationArrivalFemales = action.payload;
+      })
+      .addCase(fetchDestinationArrivalFemale.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

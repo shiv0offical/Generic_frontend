@@ -1,112 +1,145 @@
-import { Paper } from '@mui/material';
+import * as Yup from 'yup';
+import { useFormik } from 'formik';
+import { toast } from 'react-toastify';
 import logo from '../../assets/logo.png';
 import { APIURL } from '../../constants';
-import { useEffect, useState } from 'react';
 import { AuthService } from '../../services';
 import { useNavigate } from 'react-router-dom';
-import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Https';
+import EmailIcon from '@mui/icons-material/Email';
+import { Paper, TextField, Checkbox, FormControlLabel, Button, InputAdornment } from '@mui/material';
+
+const validationSchema = Yup.object({
+  email: Yup.string().email('Invalid email').required('Required'),
+  password: Yup.string().required('Required'),
+});
 
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
-
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const userData = await AuthService.login(APIURL.LOGIN, email, password);
-      if (userData) {
-        rememberMe ? localStorage.setItem('rememberedEmail', email) : localStorage.removeItem('rememberedEmail');
-        localStorage.setItem('pendingUserEmail', email);
-        localStorage.setItem('user_id', userData.data?.id);
-        navigate('/otp');
+  const formik = useFormik({
+    initialValues: {
+      email: localStorage.getItem('rememberedEmail') || '',
+      password: '',
+      rememberMe: !!localStorage.getItem('rememberedEmail'),
+    },
+    validationSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        const res = await AuthService.login(APIURL.LOGIN, values.email, values.password);
+        if (res?.success) {
+          values.rememberMe
+            ? localStorage.setItem('rememberedEmail', values.email)
+            : localStorage.removeItem('rememberedEmail');
+          localStorage.setItem('pendingUserEmail', values.email);
+          localStorage.setItem('user_id', res.data?.id);
+          toast.success('Login successful! Please enter your OTP.');
+          navigate('/otp');
+        } else {
+          toast.error(res?.message || 'Login failed');
+        }
+      } catch (err) {
+        toast.error(err?.response?.data?.message || 'Invalid Login Credentials');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-    }
-  };
-
-  useEffect(() => {
-    const remembered = localStorage.getItem('rememberedEmail');
-    if (remembered) {
-      setEmail(remembered);
-      setRememberMe(true);
-    }
-  }, []);
+      setSubmitting(false);
+    },
+  });
 
   return (
-    <>
-      <div className='bg-[#ecf0f5] w-full h-screen flex justify-center items-center'>
-        <div className='flex flex-col items-center'>
-          <img src={logo} alt='samsung logo' className='w-40' />
-          <div className='flex flex-col items-center mt-3'>
-            <Paper elevation={3} className='p-5 w-[420px]'>
-              <div className='flex flex-col items-center'>
-                <h1 className='text-sm text-gray-600 mb-4'>Sign in to start your session</h1>
-                <form className='w-full' onSubmit={handleFormSubmit}>
-                  <div className='mb-4'>
-                    <div className='flex items-center border border-gray-300 rounded-md focus-within:border-blue-500'>
-                      <input
-                        placeholder='Email'
-                        type='email'
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className='mt-1 p-2 w-full border-0 focus-visible:outline-none'
-                        required
-                      />
-                      <span className='px-2 text-xl'>
-                        <EmailIcon />
-                      </span>
-                    </div>
-                  </div>
-                  <div className='mb-4'>
-                    <div className='flex items-center border border-gray-300 rounded-md focus-within:border-blue-500'>
-                      <input
-                        placeholder='Password'
-                        type='password'
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className='mt-1 p-2 w-full border-0 focus-visible:outline-none'
-                        required
-                      />
-                      <span className='px-2 text-xl'>
-                        <LockIcon />
-                      </span>
-                    </div>
-                  </div>
-                  <div className='flex justify-between items-center'>
-                    <div>
-                      <input
-                        type='checkbox'
-                        id='remember-me'
-                        className='mt-1'
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                      />
-                      <label htmlFor='remember-me' className='ml-2 text-sm text-gray-600'>
-                        Remember me
-                      </label>
-                    </div>
-                    <div>
-                      <button type='submit' className='bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md'>
-                        Login
-                      </button>
-                    </div>
-                  </div>
-                  <div className='mt-4'>
-                    <a href='#' className='text-sm text-blue-500 hover:text-gray-800'>
-                      Forgot your password?
-                    </a>
-                  </div>
-                </form>
-              </div>
-            </Paper>
-          </div>
-        </div>
+    <div className='bg-[#ecf0f5] w-full h-screen flex justify-center items-center'>
+      <div className='flex flex-col items-center'>
+        <img src={logo} alt='samsung logo' className='w-32' />
+        <Paper elevation={3} className='p-5 w-[420px] mt-3'>
+          <form onSubmit={formik.handleSubmit} className='flex flex-col items-center w-full'>
+            <h1 className='text-sm text-gray-600 mb-2'>Sign in to start your session</h1>
+            <TextField
+              id='email'
+              name='email'
+              type='email'
+              label='Email'
+              placeholder='Email'
+              autoComplete='email'
+              fullWidth
+              size='small'
+              margin='normal'
+              disabled={formik.isSubmitting}
+              value={formik.values.email}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={formik.touched.email && Boolean(formik.errors.email)}
+              helperText={formik.touched.email && formik.errors.email}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position='end'>
+                    <EmailIcon fontSize='small' />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              id='password'
+              name='password'
+              type='password'
+              label='Password'
+              placeholder='Password'
+              autoComplete='current-password'
+              fullWidth
+              size='small'
+              margin='normal'
+              disabled={formik.isSubmitting}
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={formik.touched.password && Boolean(formik.errors.password)}
+              helperText={formik.touched.password && formik.errors.password}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position='end'>
+                    <LockIcon fontSize='small' />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <div className='flex justify-between items-center w-full mt-2'>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    id='rememberMe'
+                    name='rememberMe'
+                    checked={formik.values.rememberMe}
+                    onChange={formik.handleChange}
+                    disabled={formik.isSubmitting}
+                    size='small'
+                  />
+                }
+                label='Remember me'
+                className='text-sm text-gray-600'
+              />
+              <Button
+                type='submit'
+                variant='contained'
+                color='primary'
+                className='rounded-md transition'
+                disabled={formik.isSubmitting}
+                sx={{
+                  py: 1,
+                  px: 3,
+                  textTransform: 'none',
+                  bgcolor: 'rgb(59 130 246)',
+                  '&:hover': { bgcolor: 'rgb(37 99 235)' },
+                  ...(formik.isSubmitting && { opacity: 0.6, cursor: 'not-allowed' }),
+                }}>
+                {formik.isSubmitting ? 'Logging in...' : 'Login'}
+              </Button>
+            </div>
+            <div className='mt-2 w-full text-right'>
+              <a href='#' className='text-sm text-blue-500 hover:text-gray-800'>
+                Forgot your password?
+              </a>
+            </div>
+          </form>
+        </Paper>
       </div>
-    </>
+    </div>
   );
 }
 

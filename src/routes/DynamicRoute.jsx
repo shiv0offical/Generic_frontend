@@ -63,8 +63,8 @@ function DynamicRoute() {
         <Route path='departments' element={<Department />} />
         <Route path='user-permission' element={<UserPermission />} />
         <Route path='user-permission/create' element={<UserPermissionForm />} />
-        <Route path='factory-in-time-target' element={<PlantInTime />} />
-        <Route path='factory-in-time-target/create' element={<PlantInTimeForm />} />
+        <Route path='plant-in-time' element={<PlantInTime />} />
+        <Route path='plant-in-time/create' element={<PlantInTimeForm />} />
         <Route path='employee' element={<Employee />} />
         <Route path='employee/create' element={<EmployeeForm />} />
         <Route path='employee/edit' element={<EmployeeForm />} />
@@ -109,7 +109,7 @@ function DynamicRoute() {
         <Route path='feedback' element={<FeedbackReport />} />
         <Route path='emergency-alert' element={<EmergencyAlertReport />} />
         <Route path='seat-occupancy' element={<SeatOccupancyReport />} />
-        <Route path='geo-fence-entery-exit' element={<GeofencEntryExit />} />
+        <Route path='geo-fence-entry-exit' element={<GeofencEntryExit />} />
         <Route path='geo-fence-violation' element={<GeofencViolation />} />
         <Route path='destination-arrival-female' element={<DestinationArrivalFemale />} />
         <Route path='overspeed' element={<Overspeed />} />

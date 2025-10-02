@@ -1,16 +1,19 @@
+import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 import { APIURL } from '../../../constants';
-import { useNavigate } from 'react-router-dom';
 import { ApiService } from '../../../services';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
+import { useNavigate } from 'react-router-dom';
 import FmdGoodIcon from '@mui/icons-material/FmdGood';
 import CommonSearch from '../../../components/CommonSearch';
-import { CircularProgress, Table, TableBody, TableCell } from '@mui/material';
-import { TableContainer, TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
+import FilterOption from '../../../components/FilterOption';
+import CommonTable from '../../../components/table/CommonTable';
 
 const columns = [
+  { key: 'id', header: 'Sr No' },
   { key: 'date', header: 'Date' },
   { key: 'driverName', header: 'Driver Name' },
   { key: 'vehicleNo', header: 'Vehicle Number' },
@@ -18,216 +21,270 @@ const columns = [
   { key: 'title', header: 'Title' },
   { key: 'message', header: 'Message' },
   { key: 'actionTaken', header: 'Action Taken' },
+  {
+    key: 'actions',
+    header: 'Actions',
+    render: (_, row, handlers) => (
+      <div className='flex justify-center gap-2'>
+        <button
+          className='bg-[#00c0ef] p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'
+          style={{ minWidth: 24, minHeight: 24 }}
+          onClick={() => handlers.handleLocation(row)}>
+          <FmdGoodIcon fontSize='10px' />
+        </button>
+      </div>
+    ),
+  },
 ];
 
+function formatEmergencyAlert(data, offset = 0) {
+  return data.map((d, idx) => ({
+    id: offset + idx + 1,
+    emergencyID: d.id,
+    date: d.created_at ? dayjs(d.created_at).format('YYYY-MM-DD') : '-',
+    driverName: d.driver?.name || '-',
+    vehicleNo: d.vehicle_number || '-',
+    routeName: d.route_name || '-',
+    title: d.title || '-',
+    message: d.message || '-',
+    actionTaken: d.action_taken || '-',
+    latitude: d.latitude,
+    longitude: d.longitude,
+    raw: d,
+  }));
+}
+
 function EmergencyAlert() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const fileInputRef = useRef();
+  const company_id = localStorage.getItem('company_id');
+
+  const { routes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes);
+
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
-  const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [filterData, setFilterData] = useState({ fromDate: '', toDate: '', routes: [], vehicles: [] });
+  const [filteredData, setFilteredData] = useState([]);
 
-  const navigate = useNavigate();
+  useEffect(() => {
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+  }, [dispatch, company_id]);
+
+  const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
+    company_id,
+    ...(filterData.fromDate && { start: filterData.fromDate }),
+    ...(filterData.toDate && { end: filterData.toDate }),
+    ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
+    ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
+    ...(searchQuery?.trim() && { search: searchQuery.trim() }),
+    page: customPage,
+    limit: customLimit,
+  });
 
   useEffect(() => {
     fetchAlerts();
     // eslint-disable-next-line
-  }, [searchQuery, page, limit]);
+  }, [page, limit, searchQuery]);
 
   const fetchAlerts = async () => {
     setLoading(true);
     try {
-      const res = await ApiService.get(APIURL.EMERGENCY, { search: searchQuery, page: page + 1, limit });
-      console.log(res);
-      if (res && res.success && Array.isArray(res.data?.alerts)) {
-        setAlerts(
-          res.data.alerts.map((item, idx) => ({
-            id: item?.id || idx + 1 + page * limit,
-            emergencyID: item?.id,
-            date: dayjs(item.created_at).format('YYYY-MM-DD'),
-            vehicleNo: item?.vehicle_number,
-            routeNo: item?.route_number,
-            routeName: item?.route_name,
-            driverName: item?.driver?.name || '',
-            employeeName: item?.employee?.name || '',
-            title: item?.title,
-            message: item?.message,
-            actionTaken: item?.action_taken,
-            longitude: item?.longitude,
-            latitude: item?.latitude,
-          }))
-        );
-        setTotalCount(
-          typeof res.data?.pagination?.total === 'number' ? res.data.pagination.total : res.data.alerts.length
-        );
-      } else if (res && res.success && Array.isArray(res.data)) {
-        setAlerts(
-          res.data.map((item, idx) => ({
-            id: item?.id || idx + 1 + page * limit,
-            emergencyID: item?.id,
-            date: dayjs(item.created_at).format('YYYY-MM-DD'),
-            vehicleNo: item?.vehicle_number,
-            routeNo: item?.route_number,
-            routeName: item?.route_name,
-            driverName: item?.driver?.name || '',
-            employeeName: item?.employee?.name || '',
-            title: item?.title,
-            message: item?.message,
-            actionTaken: item?.action_taken,
-            longitude: item?.longitude,
-            latitude: item?.latitude,
-          }))
-        );
-        setTotalCount(res.data.length);
+      const res = await ApiService.get(APIURL.EMERGENCY, buildApiPayload());
+      if (res?.success) {
+        const list = Array.isArray(res.data?.alerts) ? res.data.alerts : [];
+        setFilteredData(list);
+        setTotalCount(res.data?.pagination?.total ?? list.length ?? 0);
       } else {
-        setAlerts([]);
+        setFilteredData([]);
         setTotalCount(0);
       }
     } catch {
-      setAlerts([]);
+      setFilteredData([]);
       setTotalCount(0);
-      alert('Failed to fetch Emergency Alerts');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSort = (columnKey) => {
-    const isAsc = orderBy === columnKey && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(columnKey);
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setPage(0);
+    fetchAlerts();
   };
 
-  const sortedData = orderBy
-    ? [...alerts].sort((a, b) => {
-        const valueA = a[orderBy];
-        const valueB = b[orderBy];
-        if (typeof valueA === 'string' && typeof valueB === 'string')
-          return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-        if (typeof valueA === 'number' && typeof valueB === 'number')
-          return order === 'asc' ? valueA - valueB : valueB - valueA;
-        return 0;
-      })
-    : alerts;
+  const handleFormReset = () => {
+    setFilterData({ fromDate: '', toDate: '', routes: [], vehicles: [] });
+    setSearchQuery('');
+    setPage(0);
+  };
 
-  const paginatedData = sortedData;
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!file) return toast.error('Please select a file');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=emergency_alert`, formData);
+      if (res.success) {
+        toast.success(res.message || 'File uploaded successfully!');
+        if (fileInputRef.current) fileInputRef.current.value = null;
+        setFile(null);
+        fetchAlerts();
+      } else {
+        toast.error(res.message || 'Upload failed');
+      }
+    } catch (error) {
+      toast.error('Upload failed.');
+    }
+  };
+
+  // Export only the first 100 alerts, properly formatted
+  const handleExport = async () => {
+    try {
+      const exportPayload = buildApiPayload(1, 100);
+      const res = await ApiService.get(APIURL.EMERGENCY, exportPayload);
+      const list = Array.isArray(res.data?.alerts) ? res.data.alerts : [];
+
+      if (!list.length) {
+        toast.error('No data available to export.');
+        return;
+      }
+
+      exportToExcel({
+        columns,
+        rows: buildExportRows({ columns, data: formatEmergencyAlert(list) }),
+        fileName: 'emergency_alerts.xlsx',
+      });
+    } catch (err) {
+      toast.error('Export failed');
+    }
+  };
+
+  // Export only the first 100 alerts to PDF, properly formatted
+  const handleExportPDF = async () => {
+    try {
+      const exportPayload = buildApiPayload(1, 100);
+      const res = await ApiService.get(APIURL.EMERGENCY, exportPayload);
+      const list = Array.isArray(res.data?.alerts) ? res.data.alerts : [];
+
+      if (!list.length) {
+        toast.error('No data available to export.');
+        return;
+      }
+
+      exportToPDF({
+        columns,
+        rows: buildExportRows({ columns, data: formatEmergencyAlert(list) }),
+        fileName: 'emergency_alerts.pdf',
+        orientation: 'landscape',
+      });
+    } catch (err) {
+      toast.error('Export PDF failed');
+    }
+  };
+
+  // Export a sample Excel file for emergency alert import template
+  const handleSample = () =>
+    exportToExcel({
+      columns: [
+        { key: 'vehicle_id', header: 'Vehicle ID' },
+        { key: 'route_id', header: 'Route ID' },
+        { key: 'driver_id', header: 'Driver ID' },
+        { key: 'title', header: 'Title' },
+        { key: 'message', header: 'Message' },
+        { key: 'latitude', header: 'Latitude' },
+        { key: 'longitude', header: 'Longitude' },
+      ],
+      rows: [{}],
+      fileName: 'emergency_alert_import_sample.xlsx',
+    });
+
+  const handleLocation = (row) => {
+    if (row?.latitude && row?.longitude) {
+      const gmapUrl = `https://www.google.com/maps?q=${row?.latitude},${row?.longitude}`;
+      window.open(gmapUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      toast.error('Location not available');
+    }
+  };
 
   const handleEdit = (row) => {
     navigate('/management/emergency-alert/edit', { state: row });
   };
 
-  const handleDelete = async (emergencyID) => {
+  const handleDelete = async (row) => {
     if (!window.confirm('Are you sure you want to delete this Alert?')) return;
     try {
-      const response = await ApiService.delete(`${APIURL.EMERGENCY}/${emergencyID}`);
+      const response = await ApiService.delete(`${APIURL.EMERGENCY}/${row.emergencyID}`);
       if (response && response.success) {
-        alert('Alert deleted successfully!');
-        if (paginatedData.length === 1 && page > 0) setPage(page - 1);
+        toast.success('Alert deleted successfully!');
+        if (filteredData.length === 1 && page > 0) setPage(page - 1);
         else fetchAlerts();
       } else {
-        alert('Failed to delete alert.');
+        toast.error('Failed to delete alert.');
       }
     } catch {
-      alert('An error occurred while deleting.');
+      toast.error('An error occurred while deleting.');
     }
   };
 
+  const actionHandlers = {
+    handleLocation,
+    handleEdit,
+    handleDelete,
+  };
+
+  const tableData = formatEmergencyAlert(filteredData, page * limit);
+
   return (
     <div className='w-full h-full p-2'>
-      <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-3 text-[#07163d]'>Emergency Alerts (Total: {totalCount})</h1>
-        <div className='flex gap-x-4'>
-          <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-        </div>
+      <div className='flex justify-between items-center mb-4'>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Emergency Alerts (Total: {totalCount})</h1>
+        <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
+
+      <form onSubmit={handleFormSubmit} className='mb-4'>
+        <FilterOption
+          handleExport={handleExport}
+          handleExportPDF={handleExportPDF}
+          handleSample={handleSample}
+          handleFormSubmit={handleFormSubmit}
+          filterData={filterData}
+          setFilterData={setFilterData}
+          handleFormReset={handleFormReset}
+          handleFileUpload={handleFileUpload}
+          fileInputRef={fileInputRef}
+          setFile={setFile}
+          routes={routes}
+          vehicles={routes}
+        />
+      </form>
+
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
-        {loading ? (
-          <div className='flex justify-center items-center h-64'>
-            <CircularProgress />
-          </div>
-        ) : (
-          <>
-            <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
-              <Table stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    {columns.map((col) => (
-                      <TableCell key={col.key} align='left' sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                        <TableSortLabel
-                          active={orderBy === col.key}
-                          direction={orderBy === col.key ? order : 'asc'}
-                          onClick={() => handleSort(col.key)}>
-                          {col.header}
-                        </TableSortLabel>
-                      </TableCell>
-                    ))}
-                    <TableCell align='center' sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedData.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={columns.length + 1} align='center'>
-                        No data found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedData.map((row) => (
-                      <TableRow key={row.id}>
-                        {columns.map((col) => (
-                          <TableCell key={col.key}>{row[col.key]}</TableCell>
-                        ))}
-                        <TableCell>
-                          <div className='flex justify-center gap-2'>
-                            <button
-                              className='bg-[#00c0ef] p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'
-                              onClick={() => {
-                                if (row?.latitude && row?.longitude) {
-                                  const gmapUrl = `https://www.google.com/maps?q=${row?.latitude},${row?.longitude}`;
-                                  window.open(gmapUrl, '_blank', 'noopener,noreferrer');
-                                } else {
-                                  alert('Location not available');
-                                }
-                              }}>
-                              <FmdGoodIcon fontSize='10px' />
-                            </button>
-                            <button
-                              className='bg-green-400 p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'
-                              onClick={() => handleEdit(row)}>
-                              <EditIcon fontSize='10px' />
-                            </button>
-                            <button
-                              className='bg-red-400 p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'
-                              onClick={() => handleDelete(row.emergencyID)}>
-                              <DeleteIcon fontSize='10px' />
-                            </button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <TablePagination
-              rowsPerPageOptions={[10, 15, 20, 25, 30]}
-              component='div'
-              count={totalCount}
-              rowsPerPage={limit}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              onRowsPerPageChange={(e) => {
-                setLimit(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-            />
-          </>
-        )}
+        <CommonTable
+          columns={columns.map((c) =>
+            c.key === 'actions' ? { ...c, render: (_, row) => c.render(_, row, actionHandlers) } : c
+          )}
+          data={tableData}
+          page={page}
+          rowsPerPage={limit}
+          totalCount={totalCount}
+          onPageChange={setPage}
+          onRowsPerPageChange={(val) => {
+            setLimit(val);
+            setPage(0);
+          }}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </div>
     </div>
   );

@@ -32,9 +32,9 @@ export const fetchAllVehicleData = createAsyncThunk(
 // Async thunk to fetch seat occupancy report
 export const fetchSeatOccupancyReport = createAsyncThunk(
   'vehicleReport/fetchSeatOccupancyReport',
-  async ({ company_id, route_id, start, end }, thunkAPI) => {
+  async (params, thunkAPI) => {
     try {
-      const response = await ApiService.get('seatoccupancy', { company_id, route_id, start, end });
+      const response = await ApiService.get('seatoccupancy', params);
       return response;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
@@ -43,29 +43,21 @@ export const fetchSeatOccupancyReport = createAsyncThunk(
 );
 
 // Async thunk to fetch speed over report
-export const fetchOverSpeedReport = createAsyncThunk(
-  'vehicleReport/fetchOverSpeedReport',
-  async ({ page, limit }, thunkAPI) => {
-    try {
-      const response = await ApiService.get('reports/overspeed', { page, limit });
-      return response.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
+export const fetchOverSpeedReport = createAsyncThunk('vehicleReport/fetchOverSpeedReport', async (params, thunkAPI) => {
+  try {
+    const response = await ApiService.get('reports/overspeed', params);
+    return response.data;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.message);
   }
-);
+});
 
 // Async thunk to fetch VehicleArrivalReport
 export const fetchVehicleArrivalData = createAsyncThunk(
   'vehicleReport/fetchVehicleArrivalData',
-  async ({ company_id, vehicle_route_id, start_time, end_time }, thunkAPI) => {
+  async (params, thunkAPI) => {
     try {
-      const response = await ApiService.get('vehicleroutereport', {
-        company_id,
-        vehicle_route_id,
-        start_time,
-        end_time,
-      });
+      const response = await ApiService.get('vehicleroutereport', params);
       return response;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);

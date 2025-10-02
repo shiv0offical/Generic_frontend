@@ -1,6 +1,7 @@
 import SpeedChart from './charts/SpeedChart';
 import ReportTable from '../../../components/table/ReportTable';
 import { useLocation, Link } from 'react-router-dom';
+
 const columns = [
   { key: 'date', header: 'Date time' },
   { key: 'vehicleNo', header: 'Vehicle Number' },
@@ -15,7 +16,7 @@ const columns = [
   {
     key: 'maxSpeedGmap',
     header: 'Max Speed Google-Map',
-    render: (row) => (
+    render: () => (
       <a className='text-blue-700' href='/report/overspeed/view-violation-map'>
         Google-Map
       </a>
@@ -28,6 +29,7 @@ function ViewOverspeed() {
   const { state } = useLocation();
   const row = state || {};
   const data = [row];
+
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>

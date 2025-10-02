@@ -1,16 +1,8 @@
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
+import moment from 'moment-timezone';
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
-// import { APIURL } from '../../../constants';
-// import { ApiService } from '../../../services';
 import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
-import ArrowLeftIcon from '@mui/icons-material/ArrowBackIos';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { useSelector } from 'react-redux';
 
 const statusColorMap = {
   Running: '#008000',
@@ -21,117 +13,119 @@ const statusColorMap = {
   Unknown: '#000000',
 };
 
+const getStatus = (v) => {
+  if (!v) return 'Unknown';
+  if (typeof v.speed === 'number') {
+    if (v.speed > 0) return 'Running';
+    if (v.speed === 0) return 'Parked';
+  }
+  if (!v.timestamp) return 'Offline';
+  return 'Idle';
+};
+
+const getOdo = (v) => {
+  const el = v?.ioElements?.find((e) => e.propertyName === 'totalOdometer');
+  return el && Number(el.value) ? `${(el.value / 1000).toFixed(2)} km` : '-';
+};
+
 const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
   const { vehicles } = useSelector((state) => state.vehicle);
   const [currentDateTime, setCurrentDateTime] = useState('');
-  // const [onBoard, setOnBoard] = useState(null);
-
-  // const companyId = localStorage.getItem('company_id');
-  const selected_vehicle = vehicles?.data.find((v) => v.id === vehicle?.id);
+  const v = vehicles?.data.find((x) => x.id === vehicle?.id);
 
   useEffect(() => {
-    setCurrentDateTime(dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm'));
+    setCurrentDateTime(moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm'));
   }, []);
 
-  // useEffect(() => {
-  //   if (!selected_vehicle) return;
-  //   const fetchOnboardEmpData = async () => {
-  //     const res = await ApiService.get(APIURL.PUNCHINMULTITRACK, {
-  //       company_id: companyId,
-  //       vehicle_name: selected_vehicle.vehicle_name,
-  //     });
-  //     if (res.success) setOnBoard(res.data.onboard_employee);
-  //   };
-  //   fetchOnboardEmpData();
-  // }, [selected_vehicle, companyId]);
+  const status = getStatus(v);
 
-  const devices = {
-    id: selected_vehicle?.id,
-    name: selected_vehicle?.vehicle_name,
-    number: selected_vehicle?.vehicle_number,
-    lat: selected_vehicle?.latitude || 0,
-    lng: selected_vehicle?.longitude || 0,
-    seats: selected_vehicle?.seats,
-    speed: selected_vehicle?.speed ?? selected_vehicle?.speed_limit ?? '-',
-    onboardEmp: '-',
-    assignSeat: selected_vehicle?.routes?.[0]?.total_assigned_seat ?? '-',
-    driverName: selected_vehicle?.driver
-      ? `${selected_vehicle.driver.first_name || ''} ${selected_vehicle.driver.last_name || ''}`.trim()
-      : '-',
-    driverNum: selected_vehicle?.driver?.phone_number ?? '-',
-    routeName: selected_vehicle?.routes?.[0]?.name ?? selected_vehicle?.routes?.[0]?.route_name ?? '-',
-    totalDistance: Number(selected_vehicle?.ioElements?.find((el) => el.propertyName === 'totalOdometer')?.value)
-      ? `${(selected_vehicle.ioElements.find((el) => el.propertyName === 'totalOdometer').value / 1000).toFixed(2)} km`
-      : '-',
-  };
+  const details = [
+    ['Vehicle Name', v?.vehicle_name ?? '-'],
+    ['Vehicle Number', v?.vehicle_number ?? '-'],
+    ['Route Name', v?.routes?.[0]?.name ?? '-'],
+    ['Total Distance', getOdo(v)],
+    ['Total Seats', v?.seats ?? '-'],
+    ['Assigned Seats', v?.routes?.[0]?.total_assigned_seat ?? '-'],
+    ['Onboarded Employee', '-'],
+    ['Speed', v?.speed ?? v?.speed_limit ?? '-'],
+    ['Driver Name', v?.driver ? `${v.driver.first_name || ''} ${v.driver.last_name || ''}`.trim() : '-'],
+    ['Driver Number', v?.driver?.phone_number ?? '-'],
+  ];
 
   return (
-    <div
-      className={`absolute transition-all top-5 ${isShowPanel ? 'right-0' : 'right-[-306px]'} 
-      w-[300px] rounded-md bg-white z-[99999] shadow-md`}>
-      {/* toggle button */}
-      <div
-        className={`absolute top-5 ${isShowPanel ? '-left-7.5' : 'left-0'} h-[30px] w-[30px] 
-        bg-[#1d31a6] cursor-pointer text-white flex items-center justify-center`}
-        onClick={handleRightPanel}>
-        {isShowPanel ? <ArrowRightIcon fontSize='small' /> : <ArrowLeftIcon fontSize='small' />}
-      </div>
-
-      {/* header */}
-      <div className='flex flex-col items-center border-b border-gray-300 mt-3 mb-3'>
-        <p className='font-semibold'>{devices.name}</p>
-        <div className='flex justify-between w-full px-3 mt-3 mb-3'>
+    <>
+      {isShowPanel && (
+        <div className='fixed top-1/2 z-[100000] -translate-y-1/2 transition-all duration-300 left-[calc(100vw-385px)]'>
           <button
-            className='px-2 text-white rounded-sm text-[12px] py-1'
-            style={{ backgroundColor: statusColorMap[vehicle.status] || '#000' }}>
-            {vehicle.status}
+            className='h-10 w-10 bg-gradient-to-br from-[#1d31a6] to-[#3b5998] cursor-pointer text-white flex items-center justify-center rounded-full shadow-lg border border-white'
+            onClick={handleRightPanel}
+            title='Hide Panel'
+            type='button'>
+            <ArrowRightIcon fontSize='small' />
           </button>
-          <button className='bg-[#080c27] px-2 text-white rounded-sm text-[12px] py-1'>{currentDateTime}</button>
         </div>
-      </div>
+      )}
 
-      {/* details */}
-      <div className='details-panel'>
-        {[
-          ['Vehicle Name', devices.name],
-          ['Vehicle Number', devices.number],
-          ['Route Name', devices.routeName],
-          ['Total Distance', '0.00 m'],
-          ['Total Seats', devices.seats],
-          ['Assigned Seats', devices.assignSeat],
-          ['Onboarded Employee', devices.onboardEmp],
-          ['Speed', devices.speed],
-          ['Driver Name', devices.driverName],
-          ['Driver Number', devices.driverNum],
-        ].map(([label, value]) => (
-          <div key={label} className='flex justify-between py-1 px-3 text-sm'>
-            <p>{label} :</p>
-            <p>{value || '-'}</p>
+      <div
+        className={`fixed transition-all top-6 ${isShowPanel ? 'right-0' : 'right-[-340px]'}
+        w-[360px] rounded-xl bg-white z-[99999] shadow-2xl border border-gray-200 overflow-hidden`}
+        style={{ transition: 'right 0.3s' }}>
+        <div className='flex flex-col items-center bg-gradient-to-r from-[#1d31a6] to-[#3b5998] py-4 px-4 border-b border-gray-200'>
+          <p className='font-bold text-lg text-white mb-1 truncate w-full text-center'>{v?.vehicle_name ?? '-'}</p>
+          <div className='flex justify-between items-center w-full gap-2 mt-2'>
+            <span
+              className='px-3 py-1 rounded-full text-xs font-semibold shadow'
+              style={{
+                backgroundColor: statusColorMap[status] || '#000',
+                color: '#fff',
+                minWidth: 80,
+                textAlign: 'center',
+                letterSpacing: 1,
+              }}>
+              {status}
+            </span>
+            <span className='bg-white text-[#1d31a6] px-3 py-1 rounded-full text-xs font-semibold shadow border border-[#1d31a6]'>
+              {currentDateTime}
+            </span>
           </div>
-        ))}
+        </div>
 
-        {/* buttons */}
-        <div className='flex justify-center gap-3 mt-8 flex-row w-full px-3 flex-wrap'>
-          <Link to='/report/parked'>
-            <Btn>Reports</Btn>
-          </Link>
-          <Link to='/master/vehicle'>
-            <Btn>Route Detail</Btn>
-          </Link>
-          <Link to='/playback' state={{ selectedVehicle: selected_vehicle }}>
-            <Btn>Playback</Btn>
-          </Link>
-          <Link to='/bus-multi-track/punch' state={{ selectedVehicle: selected_vehicle }}>
-            <Btn>Employee Punch Report</Btn>
-          </Link>
+        <div className='details-panel py-4 px-4 bg-gray-50 min-h-[340px]'>
+          <div className='grid grid-cols-1 gap-3'>
+            {details.map(([label, value]) => (
+              <div
+                key={label}
+                className='flex justify-between items-center bg-white rounded-md px-3 py-2 shadow-sm border border-gray-100'>
+                <span className='text-gray-500 font-medium text-[12px]'>{label}</span>
+                <span className='text-gray-900 font-semibold text-[12px]'>{value || '-'}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className='flex flex-wrap justify-center gap-2 mt-7 w-full'>
+            <Link to='/report/parked'>
+              <Btn>Reports</Btn>
+            </Link>
+            <Link to='/master/vehicle'>
+              <Btn>Route Detail</Btn>
+            </Link>
+            <Link to='/playback' state={{ selectedVehicle: vehicle }}>
+              <Btn>Playback</Btn>
+            </Link>
+            <Link to='/bus-multi-track/punch' state={{ selectedVehicle: vehicle }}>
+              <Btn>Employee Punch Report</Btn>
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
 const Btn = ({ children }) => (
-  <button className='bg-[#080c27] px-2 text-white rounded-sm text-[12px] py-1 cursor-pointer'>{children}</button>
+  <button className='bg-gradient-to-r from-[#1d31a6] to-[#3b5998] px-3 py-1.5 text-white rounded-lg text-[12px] font-semibold shadow hover:from-[#3b5998] hover:to-[#1d31a6] transition-all duration-150 cursor-pointer'>
+    {children}
+  </button>
 );
 
 export default MheStatusPanel;

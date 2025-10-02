@@ -1,60 +1,36 @@
-import { useEffect, useState } from 'react';
-import ReportTable from '../../../../components/table/ReportTable';
-import CustomTab from '../components/CustomTab';
-import tabs from '../components/Tab';
-import { fetchVehicleActivityMoment, fetchVehicleMissingInflux } from '../../../../redux/vehicleActivitySlice';
-import { useDispatch } from 'react-redux';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-} from '@mui/material';
 import moment from 'moment';
+import tabs from '../components/Tab';
+import { useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react';
+import CustomTab from '../components/CustomTab';
+import ReportTable from '../../../../components/table/ReportTable';
+import { fetchVehicleMissingInflux } from '../../../../redux/vehicleActivitySlice';
 
 const columns = [
-  {
-    key: 'vehicleType',
-    header: 'Vehicle Type',
-    render: (_ignored, row) => {
-      return row.vehicleType;
-    },
-  },
-  { key: 'vehicle_number', header: 'Vechicle Number' },
-  {
-    key: 'vehicle_driver',
-    header: 'Driver Number',
-    render: (row) => {
-      return row?.vehicle_driver?.phone_number;
-    },
-  },
+  { key: 'vehicleType', header: 'Vehicle Type', render: (_ignored, row) => row.vehicleType || '-' },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (_ignored, row) => row.vehicle_number || '-' },
   {
     key: 'vehicle_driver_name',
     header: 'Driver Name',
-    render: (row) => {
+    render: (_ignored, row) => {
       const firstName = row?.vehicle_driver?.first_name || '';
       const lastName = row?.vehicle_driver?.last_name || '';
-      return `${firstName} ${lastName}`;
+      const fullName = `${firstName} ${lastName}`.trim();
+      return fullName || '-';
     },
   },
   {
-    key: 'routeDetails',
-    header: 'Route Details',
-    render: (row) => {
-      const routeDetails = row.vehicle_route || '';
-      return `${routeDetails}`;
-    },
+    key: 'vehicle_driver',
+    header: 'Driver Number',
+    render: (_ignored, row) => row?.vehicle_driver?.phone_number || '-',
   },
-  { key: 'imei_number', header: 'IMEI Number' },
-  { key: 'sim_number', header: 'SIM Number' },
+  { key: 'routeDetails', header: 'Route Details', render: (_ignored, row) => row.vehicle_route || '-' },
+  { key: 'imei_number', header: 'IMEI Number', render: (_ignored, row) => row.imei_number || '-' },
+  { key: 'sim_number', header: 'Sim Number', render: (_ignored, row) => row.sim_number || '-' },
   {
-    key: 'imei',
+    key: 'installation_date',
     header: 'Installation Date',
-    render: (row) => {
+    render: (_ignored, row) => {
       const createdDate = row.created_at;
       return createdDate ? moment(createdDate).format('DD-MM-YYYY hh:mm A') : '-';
     },
@@ -66,70 +42,29 @@ function NewDevice() {
   const dispatch = useDispatch();
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [orderBy, setOrderBy] = useState('');
-  const [order, setOrder] = useState('asc');
+  const [limit, setLimit] = useState(5);
   const [vehicleData, setVehicleData] = useState([]);
-
-  const handleSort = (key) => {
-    const isAsc = orderBy === key && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(key);
-  };
-
-  const getValueByKey = (row, key) => {
-    switch (key) {
-      case 'vehicle_driver':
-        return row?.vehicle_driver?.phone_number || '';
-      case 'vehicle_driver_name':
-        const first = row?.vehicle_driver?.first_name || '';
-        const last = row?.vehicle_driver?.last_name || '';
-        return `${first} ${last}`.trim();
-      case 'routeDetails':
-        return row?.vehicle_route || '';
-      default:
-        return row[key] ?? '';
-    }
-  };
-
-  const sortedData = [...vehicleData].sort((a, b) => {
-    if (!orderBy) return 0;
-
-    const valueA = getValueByKey(a, orderBy);
-    const valueB = getValueByKey(b, orderBy);
-
-    if (typeof valueA === 'string' && typeof valueB === 'string') {
-      return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    }
-
-    if (typeof valueA === 'number' && typeof valueB === 'number') {
-      return order === 'asc' ? valueA - valueB : valueB - valueA;
-    }
-
-    return 0;
-  });
-
-  const paginatedData = sortedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       if (company_id) {
-        const response = await dispatch(
-          fetchVehicleMissingInflux({
-            company_id,
-            page: page,
-            limit: rowsPerPage,
-          })
-        );
-        console.log('response', response);
+        setLoading(true);
+        const response = await dispatch(fetchVehicleMissingInflux({ company_id, page: page, limit }));
         if (response?.payload?.status === 200) {
           setVehicleData(response.payload?.data?.vehicles || []);
+          setTotalCount(response.payload?.data?.total || 0);
+        } else {
+          setVehicleData([]);
+          setTotalCount(0);
         }
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [dispatch, company_id, page, rowsPerPage]);
+  }, [dispatch, company_id, page, limit]);
 
   return (
     <div className='w-full h-full p-2'>
@@ -137,49 +72,17 @@ function NewDevice() {
       <div className='flex justify-between items-center'>
         <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>New Device Report</h1>
       </div>
-      <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
-        <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                {columns.map((col) => (
-                  <TableCell key={col.key} align='left' sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                    <TableSortLabel
-                      active={orderBy === col.key}
-                      direction={orderBy === col.key ? order : 'asc'}
-                      onClick={() => handleSort(col.key)}>
-                      {col.header}
-                    </TableSortLabel>
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedData.map((row, index) => (
-                <TableRow hover key={row.id || index}>
-                  {columns.map((column) => (
-                    <TableCell className='whitespace-nowrap' key={column.key}>
-                      {column.render ? column.render(row, index) : row[column.key]}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[10, 15, 20, 25, 30]}
-          component='div'
-          count={vehicleData.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={(event, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
-            setPage(0);
-          }}
-        />
-      </div>
+      <ReportTable
+        columns={columns}
+        data={vehicleData}
+        loading={loading}
+        page={page}
+        setPage={setPage}
+        limit={limit}
+        setLimit={setLimit}
+        limitOptions={[5, 10, 20]}
+        totalCount={totalCount}
+      />
     </div>
   );
 }

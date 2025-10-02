@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { ApiService } from '../services';
 
-export const fetchPuchLogReport = createAsyncThunk('geofence/getVehicleGeofence', async ({ page, limit }, thunkAPI) => {
+export const fetchPuchLogReport = createAsyncThunk('geofence/getVehicleGeofence', async (params, thunkAPI) => {
   try {
-    const response = await ApiService.get('reports/punchlog', { page, limit });
+    const response = await ApiService.get('reports/punchlog', params);
     return response.data;
   } catch (error) {
     return thunkAPI.rejectWithValue(error.message);

@@ -1,17 +1,14 @@
 import { ApiService } from '../services';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-export const fetchFeedbackReport = createAsyncThunk(
-  'feedbackReport/fetchFeedbackReport',
-  async ({ page, limit }, thunkAPI) => {
-    try {
-      const response = await ApiService.get('/reports/feedback', { page, limit });
-      return response?.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
+export const fetchFeedbackReport = createAsyncThunk('feedbackReport/fetchFeedbackReport', async (params, thunkAPI) => {
+  try {
+    const response = await ApiService.get('/reports/feedback', params);
+    return response?.data;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.message);
   }
-);
+});
 
 const initialState = {
   feedbackReportData: {},

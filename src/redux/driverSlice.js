@@ -2,21 +2,17 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { ApiService } from '../services';
 import { APIURL } from '../constants';
 
-export const fetchDrivers = createAsyncThunk(
-  'driver/fetchDrivers',
-  async ({ page = 1, limit = 10, search = '', from_date = '', to_date = '' }, { rejectWithValue }) => {
-    try {
-      const res = await ApiService.get(APIURL.DRIVER, { page, limit, search, from_date, to_date });
+export const fetchDrivers = createAsyncThunk('driver/fetchDrivers', async (params = {}, { rejectWithValue }) => {
+  try {
+    const res = await ApiService.get(APIURL.DRIVER, params);
+    if (!res?.success) return rejectWithValue(res?.message || 'Failed to fetch drivers');
 
-      if (!res?.success) return rejectWithValue(res?.message || 'Failed to fetch drivers');
-
-      const { drivers = [], pagination } = res.data;
-      return { drivers, pagination };
-    } catch (err) {
-      return rejectWithValue(err.message || 'Network error');
-    }
+    const { drivers = [], pagination } = res.data;
+    return { drivers, pagination };
+  } catch (err) {
+    return rejectWithValue(err.message || 'Network error');
   }
-);
+});
 
 // DELETE driver thunk
 export const deleteDriver = createAsyncThunk('driver/deleteDriver', async (id, { rejectWithValue }) => {

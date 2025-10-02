@@ -16,7 +16,6 @@ import empBoardingStatusReducer from './empBoardingStatusSlice';
 import lateArrivalStatusReducer from './lateArrivalSlice';
 import overspeedStatusReducer from './overspeedStatusSlice';
 import distanceCoverStatusReducer from './distanceCoverStatusSlice';
-import counterCardReducer from './counterCardSlice';
 import emergencyReportAlertReducer from './emergencyReportAlertSlice';
 import feedBackReportReducer from './feedBackReportSlice';
 import vehicleActivityReducer from './vehicleActivitySlice';
@@ -40,7 +39,6 @@ const store = configureStore({
     distanceCoverStatus: distanceCoverStatusReducer,
     lateArrivalStatus: lateArrivalStatusReducer,
     overspeedStatus: overspeedStatusReducer,
-    counterCard: counterCardReducer,
     feedbackReport: feedBackReportReducer,
     vehicleActivity: vehicleActivityReducer,
   },

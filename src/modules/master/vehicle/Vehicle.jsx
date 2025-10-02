@@ -1,414 +1,313 @@
+import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
-import { toast } from 'react-toastify';
-import { useState, useEffect } from 'react';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import IModal from '../../../components/modal/Modal';
 import { Link, useNavigate } from 'react-router-dom';
-import FilterOptions from './components/FilterOption';
-import FmdGoodIcon from '@mui/icons-material/FmdGood';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
+import { APIURL } from '../../../constants';
+import { ApiService } from '../../../services';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
+import IModal from '../../../components/modal/Modal';
+import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
-import { CircularProgress, Table, TableBody, TableCell } from '@mui/material';
-import { changeVehicleStatus, deleteVehicle, fetchVehicles } from '../../../redux/vehiclesSlice';
-import { TableContainer, TableHead, TablePagination, TableRow, TableSortLabel } from '@mui/material';
+import CommonTable from '../../../components/table/CommonTable';
+import FmdGoodIcon from '@mui/icons-material/FmdGood';
 
-const vehicleSampleFields = [
-  { key: 'vehicle_name', header: 'Vehicle Name' },
-  { key: 'vehicle_number', header: 'Vehicle Number' },
-  { key: 'sim_number', header: 'SIM Number' },
-  { key: 'imei_number', header: 'IMEI Number' },
-  { key: 'speed_limit', header: 'Speed Limit' },
-  { key: 'seats', header: 'Seat Count' },
+const columns = [
+  { key: 'srNo', header: 'Sr No', render: (_, row) => row.id },
+  { key: 'vehicleName', header: 'Vehicle Name' },
+  { key: 'vehicleNumber', header: 'Vehicle Number' },
+  { key: 'simNumber', header: 'SIM Number' },
+  { key: 'imeiNumber', header: 'IMEI Number' },
+  { key: 'speedLimit', header: 'Speed Limit' },
+  { key: 'seatCount', header: 'Seat Count' },
+  { key: 'createdAt', header: 'Created At' },
+  { key: 'driverName', header: 'Driver Name' },
+  { key: 'driverEmail', header: 'Driver Email' },
+  { key: 'driverPhoneNumber', header: 'Driver Phone' },
+  { key: 'routeNumber', header: 'Route Number' },
+  { key: 'routeName', header: 'Route Name' },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (_, row, setSelectedVehicle, setIsStatusModalOpen) => (
+      <button
+        onClick={() => {
+          setSelectedVehicle(row);
+          setIsStatusModalOpen(true);
+        }}
+        className={`text-white px-2 py-1 rounded text-sm ${row.status === 'Active' ? 'bg-green-600' : 'bg-red-600'}`}>
+        {row.status}
+      </button>
+    ),
+  },
 ];
 
-const handleSample = () => {
-  const headers = vehicleSampleFields.map((f) => f.header);
-  const values = vehicleSampleFields.map(() => '');
+function formatVehicle(data, offset = 0) {
+  return data.map((v, idx) => ({
+    id: offset + idx + 1,
+    actual_id: v.id,
+    vehicleName: v.vehicle_name || '',
+    vehicleNumber: v.vehicle_number || '',
+    simNumber: v.sim_number || '',
+    imeiNumber: v.imei_number || '',
+    speedLimit: v.speed_limit || '',
+    seatCount: v.seats || '',
+    createdAt: v.created_at ? dayjs(v.created_at).format('YYYY-MM-DD') : '',
+    driverName: `${v.driver?.first_name || ''} ${v.driver?.last_name || ''}`.trim() || '-',
+    driverEmail: v.driver?.email || '-',
+    driverPhoneNumber: v.driver?.phone_number || '-',
+    routeNumber: Array.isArray(v.routes) && v.routes[0]?.route_number ? v.routes[0].route_number : '-',
+    routeName: Array.isArray(v.routes) && v.routes[0]?.route_name ? v.routes[0].route_name : '-',
+    status: v.vehicle_status_id === 1 ? 'Active' : 'Inactive',
+  }));
+}
 
-  const csv = [headers, values]
-    .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
-    .join('\n');
-
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const link = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob),
-    download: 'vehicle_sample.csv',
-  });
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-};
-
-const Vehicle = () => {
+function Vehicle() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const fileInputRef = useRef();
+
+  const { vehicleRoutes } = useSelector((s) => s.vehicleRoute || {});
 
   const [page, setPage] = useState(0);
-  const [file, setFile] = useState(null);
-  const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('');
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [limit, setLimit] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [file, setFile] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [filterData, setFilterData] = useState({ fromDate: '', toDate: '' });
-
-  const { vehicles, pagination, loading } = useSelector((state) => state.vehicles);
-
-  const formatVehicle = (info) => {
-    return (
-      info?.map((data, idx) => {
-        const formattedDate = data.created_at ? dayjs(data.created_at).format('YYYY-MM-DD') : '-';
-        const driverFirstName = data.driver?.first_name || '';
-        const driverLastName = data.driver?.last_name || '';
-        const driverName = driverFirstName || driverLastName ? `${driverFirstName} ${driverLastName}`.trim() : '-';
-        return {
-          slNo: idx + 1,
-          id: data.id,
-          vehicleName: data.vehicle_name,
-          vehicleNumber: data.vehicle_number,
-          simNumber: data.sim_number,
-          imeiNumber: data.imei_number,
-          speedLimit: data.speed_limit,
-          seatCount: data.seats,
-          createdAt: formattedDate,
-          driverName: driverName,
-          driverEmail: data.driver?.email || '-',
-          driverPhoneNumber: data.driver?.phone_number || '-',
-          routeNumber:
-            Array.isArray(data.routes) && data.routes.length > 0 && data.routes[0]?.route_number
-              ? data.routes[0].route_number
-              : '-',
-          routeName:
-            Array.isArray(data.routes) && data.routes.length > 0 && data.routes[0]?.route_name
-              ? data.routes[0].route_name
-              : '-',
-          status: data.vehicle_status_id === 1 ? 'Active' : 'Inactive',
-          actual_id: data.id,
-        };
-      }) || []
-    );
-  };
-
-  const getVehicleslist = (pageNumber, limit, filters, search) => {
-    dispatch(fetchVehicles({ page: pageNumber, limit, fromDate: filters.fromDate, toDate: filters.toDate, search }));
-  };
+  const [filterData, setFilterData] = useState({ fromDate: '', toDate: '', routes: [], vehicles: [] });
+  const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
-    getVehicleslist(page + 1, rowsPerPage, filterData, searchQuery);
-    // eslint-disable-next-line
-  }, [page, rowsPerPage, filterData, searchQuery]);
+    dispatch(fetchVehicleRoutes({ limit: 100 }));
+  }, [dispatch]);
 
-  const vehicleData = formatVehicle(vehicles);
-  const totalCount = pagination?.total || 0;
-
-  const columns = [
-    { key: 'slNo', header: 'Sl No' },
-    { key: 'vehicleName', header: 'Vehicle Name' },
-    { key: 'vehicleNumber', header: 'Vehicle Number' },
-    { key: 'simNumber', header: 'SIM Number' },
-    { key: 'imeiNumber', header: 'IMEI Number' },
-    { key: 'speedLimit', header: 'Speed Limit' },
-    { key: 'seatCount', header: 'Seat Count' },
-    { key: 'createdAt', header: 'Created At' },
-    { key: 'driverName', header: 'Driver Name' },
-    { key: 'driverEmail', header: 'Driver Email' },
-    { key: 'driverPhoneNumber', header: 'Driver Phone Number' },
-    { key: 'routeNumber', header: 'Route Number' },
-    { key: 'routeName', header: 'Route Name' },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (row) => (
-        <button
-          onClick={() => handleStatusClick(row)}
-          className={`text-white px-2 py-1 rounded text-sm ${row.status === 'Active' ? 'bg-green-600' : 'bg-red-600'}`}>
-          {row.status}
-        </button>
-      ),
-    },
-  ];
-
-  const handleSort = (columnKey) => {
-    const isAsc = orderBy === columnKey && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(columnKey);
-  };
-
-  const sortedData = [...vehicleData].sort((a, b) => {
-    if (!orderBy) return 0;
-    const valueA = a[orderBy];
-    const valueB = b[orderBy];
-
-    if (typeof valueA === 'string' && typeof valueB === 'string')
-      return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    return order === 'asc' ? (valueA ?? 0) - (valueB ?? 0) : (valueB ?? 0) - (valueA ?? 0);
+  const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
+    ...(filterData.fromDate && { fromDate: filterData.fromDate }),
+    ...(filterData.toDate && { toDate: filterData.toDate }),
+    ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
+    ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
+    ...(searchQuery?.trim() && { search: searchQuery.trim() }),
+    page: customPage,
+    limit: customLimit,
   });
+
+  useEffect(() => {
+    dispatch(fetchVehicles(buildApiPayload())).then((res) => {
+      setFilteredData(res?.payload?.vehicles || []);
+      setTotalCount(res?.payload?.pagination?.total ?? res?.payload?.vehicles?.length ?? 0);
+    });
+    // eslint-disable-next-line
+  }, [dispatch, page, limit, searchQuery]);
 
   const handleView = (row) => navigate('/master/vehicle/view', { state: { ...row, action: 'VIEW' } });
   const handleEdit = (row) => navigate('/master/vehicle/edit', { state: { ...row, action: 'EDIT' } });
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this Vehicle?')) return;
-    dispatch(deleteVehicle(id))
-      .unwrap()
-      .then(() => {
-        toast.success('Vehicle deleted successfully!', { position: 'top-right' });
-        dispatch(
-          fetchVehicles({
-            page: page + 1,
-            limit: rowsPerPage,
-            fromDate: filterData.fromDate,
-            toDate: filterData.toDate,
-            search: searchQuery,
-          })
-        );
-      })
-      .catch((err) => {
-        toast.error(err || 'Failed to delete vehicle.', { position: 'top-right' });
+    try {
+      const res = await ApiService.delete(`${APIURL.VEHICLE}/${id}`);
+      if (res.success) {
+        toast.success('Vehicle deleted successfully!');
+        dispatch(fetchVehicles(buildApiPayload()));
+      } else {
+        toast.error(res.message || 'Failed to delete vehicle');
+      }
+    } catch {
+      toast.error('Delete failed.');
+    }
+  };
+
+  const handleStatusChange = async () => {
+    if (!selectedVehicle) return;
+    try {
+      const newStatusId = selectedVehicle.status === 'Active' ? 2 : 1;
+      const res = await ApiService.put(`${APIURL.VEHICLE}/${selectedVehicle.actual_id}`, {
+        vehicle_status_id: newStatusId,
       });
+      if (res.success) {
+        toast.success('Status updated!');
+        setIsStatusModalOpen(false);
+        dispatch(fetchVehicles(buildApiPayload()));
+      } else {
+        toast.error('Failed to update status.');
+      }
+    } catch {
+      toast.error('Status update failed.');
+    }
   };
 
-  const handleStatusClick = (row) => {
-    setSelectedVehicle(row);
-    setIsStatusModalOpen(true);
-  };
-
-  const handleClickFilter = () => {
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
     setPage(0);
-    getVehicleslist(1, rowsPerPage, filterData, searchQuery);
+    dispatch(fetchVehicles(buildApiPayload(1, limit))).then((res) => {
+      setFilteredData(res?.payload?.vehicles || []);
+      setTotalCount(res?.payload?.pagination?.total || 0);
+    });
   };
 
   const handleFormReset = () => {
-    const resetFilter = { fromDate: '', toDate: '' };
-    setFilterData(resetFilter);
+    setFilterData({ fromDate: '', toDate: '', routes: [], vehicles: [] });
+    setSearchQuery('');
     setPage(0);
-    getVehicleslist(1, rowsPerPage, resetFilter, searchQuery);
   };
 
-  const handleFileUpload = async (event) => {
-    event.preventDefault();
-    if (!file) {
-      alert('Please select a file.');
-      return;
-    }
-
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!file) return toast.error('Please select a file');
     const formData = new FormData();
     formData.append('file', file);
-
-    try {
-      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=vehicle`, formData);
-      if (res.success) {
-        alert(res.message);
-        if (fileInputRef.current) fileInputRef.current.value = null;
-        fetchData();
-      } else {
-        alert(res.message || 'Something went wrong.');
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Upload failed.');
+    const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=vehicle`, formData);
+    if (res.success) {
+      toast.success(res.message);
+      if (fileInputRef.current) fileInputRef.current.value = null;
+      dispatch(fetchVehicles(buildApiPayload()));
+    } else {
+      toast.error(res.message || 'Upload failed');
     }
   };
 
+  // Export only the first 100 vehicles, properly formatted, using fetchVehicles
   const handleExport = async () => {
     try {
-      const res = await dispatch(
-        fetchVehicles({
-          page: 1,
-          limit: totalCount || 1000,
-          fromDate: filterData.fromDate,
-          toDate: filterData.toDate,
-          search: searchQuery,
-        })
-      ).unwrap();
-      const fullData = formatVehicle(res?.vehicles || []);
-
-      if (!fullData?.length) return toast.warning('No data available to export.', { position: 'top-right' });
-
-      const cols = columns;
-      const headers = cols.map((c) => c.header);
-
-      const rows = fullData?.map((row, i) =>
-        cols.map((col) => {
-          if (col.key === 'slNo') return i + 1;
-          if (col.key === 'status') return row.status;
-          if (typeof row[col.key] === 'boolean') return row[col.key] ? 'Yes' : 'No';
-          return row[col.key] ?? '';
-        })
-      );
-
-      const csv = [headers, ...rows]
-        .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
-        .join('\n');
-
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const link = Object.assign(document.createElement('a'), {
-        href: URL.createObjectURL(blob),
-        download: 'vehicles.csv',
+      const exportPayload = buildApiPayload(1, 100);
+      const res = await dispatch(fetchVehicles(exportPayload));
+      const vehicles = res?.payload?.vehicles || [];
+      exportToExcel({
+        columns,
+        rows: buildExportRows({ columns, data: formatVehicle(vehicles) }),
+        fileName: 'vehicle_master.xlsx',
       });
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
     } catch (err) {
-      toast.error('Failed to export vehicles.', { position: 'top-right' });
+      toast.error('Export failed');
     }
   };
 
-  const handleStatusChange = () => {
-    if (!selectedVehicle) return;
-
-    const newStatusId = selectedVehicle.status === 'Active' ? 2 : 1;
-
-    dispatch(changeVehicleStatus({ id: selectedVehicle.actual_id, newStatusId }))
-      .unwrap()
-      .then((res) => {
-        setIsStatusModalOpen(false);
-        setSelectedVehicle(null);
-        toast.success('Vehicle updated successfully', { position: 'top-right' });
-        dispatch(
-          fetchVehicles({
-            page: 1,
-            limit: rowsPerPage,
-            fromDate: filterData.fromDate,
-            toDate: filterData.toDate,
-            search: searchQuery,
-          })
-        );
-      })
-      .catch((err) => {
-        toast.error(err || 'Failed to update status', { position: 'top-right' });
+  // Export only the first 100 vehicles to PDF, properly formatted, using fetchVehicles
+  const handleExportPDF = async () => {
+    try {
+      const exportPayload = buildApiPayload(1, 100);
+      const res = await dispatch(fetchVehicles(exportPayload));
+      const vehicles = res?.payload?.vehicles || [];
+      exportToPDF({
+        columns,
+        rows: buildExportRows({ columns, data: formatVehicle(vehicles) }),
+        fileName: 'vehicle_master.pdf',
+        orientation: 'landscape',
       });
+    } catch (err) {
+      toast.error('Export PDF failed');
+    }
   };
+
+  // Export a sample Excel file for vehicle import template
+  const handleSample = () =>
+    exportToExcel({
+      columns: [
+        { key: 'vehicle_name', header: 'Vehicle Name' },
+        { key: 'vehicle_number', header: 'Vehicle Number' },
+        { key: 'sim_number', header: 'SIM Number' },
+        { key: 'imei_number', header: 'IMEI Number' },
+        { key: 'speed_limit', header: 'Speed Limit' },
+        { key: 'seats', header: 'Seat Count' },
+        { key: 'driver_first_name', header: 'Driver First Name' },
+        { key: 'driver_last_name', header: 'Driver Last Name' },
+        { key: 'driver_email', header: 'Driver Email' },
+        { key: 'driver_phone_number', header: 'Driver Phone' },
+        { key: 'route_number', header: 'Route Number' },
+        { key: 'route_name', header: 'Route Name' },
+      ],
+      rows: [{}],
+      fileName: 'vehicle_import_sample.xlsx',
+    });
+
+  const tableData = formatVehicle(filteredData, page * limit);
 
   return (
     <div className='w-full h-full p-2'>
-      <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehicles (Total: {totalCount})</h1>
-        <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <div className='flex justify-between mb-4'>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Vehicles (Total: {totalCount})</h1>
+        <div className='flex gap-2'>
+          <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <Link to='/master/vehicle/create'>
+            <button className='text-white bg-[#07163d] hover:bg-[#0a1a4a] font-medium rounded-sm text-sm px-5 py-2.5'>
+              New Vehicle
+            </button>
+          </Link>
+        </div>
       </div>
 
       {isStatusModalOpen && selectedVehicle && (
-        <IModal toggleModal={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)}>
+        <IModal open={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)}>
           <div className='p-4'>
             <h2 className='text-xl font-semibold mb-4 text-[#07163d]'>Change Vehicle Status</h2>
             <p className='mb-6'>
-              Are you sure you want to change status of <strong>{selectedVehicle.vehicleName}</strong> from{' '}
+              Change status of <strong>{selectedVehicle.vehicleName}</strong> from{' '}
               <strong>{selectedVehicle.status}</strong> to{' '}
               <strong>{selectedVehicle.status === 'Active' ? 'Inactive' : 'Active'}</strong>?
             </p>
             <div className='flex justify-end gap-3'>
               <button
-                className='px-4 py-2 rounded bg-gray-300 text-[#07163d] hover:bg-gray-400'
+                className='px-4 py-2 rounded bg-gray-300 text-[#07163d]'
                 onClick={() => setIsStatusModalOpen(false)}>
                 Cancel
               </button>
-              <button
-                className='px-4 py-2 rounded bg-[#07163d] text-white hover:bg-[#0a1a4a]'
-                onClick={handleStatusChange}>
+              <button className='px-4 py-2 rounded bg-[#07163d] text-white' onClick={handleStatusChange}>
                 Confirm
               </button>
             </div>
           </div>
         </IModal>
       )}
-      <FilterOptions
-        handleClickFilter={handleClickFilter}
-        setFilterData={setFilterData}
-        filterData={filterData}
-        handleFormReset={handleFormReset}
-        handleFileUpload={handleFileUpload}
-        setFile={setFile}
-        file={file}
-        handleExport={handleExport}
-        handleSample={handleSample}
-      />
-      <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
-        <TableContainer sx={{ maxHeight: 600, overflowX: 'auto' }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                {columns.map((col) => (
-                  <TableCell key={col.key} align='left' sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                    <TableSortLabel
-                      active={orderBy === col.key}
-                      direction={orderBy === col.key ? order : 'asc'}
-                      onClick={() => handleSort(col.key)}>
-                      {col.header}
-                    </TableSortLabel>
-                  </TableCell>
-                ))}
-                <TableCell>Action</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length + 1} align='center'>
-                    <CircularProgress />
-                  </TableCell>
-                </TableRow>
-              ) : vehicleData.length > 0 ? (
-                sortedData.map((row, index) => (
-                  <TableRow hover key={row.id || index}>
-                    {columns.map((column) => (
-                      <TableCell className='whitespace-nowrap' key={column.key}>
-                        {column.render ? column.render(row, index) : row[column.key]}
-                      </TableCell>
-                    ))}
-                    <TableCell key={row.id}>
-                      <div className='flex flex-nowrap justify-center gap-1'>
-                        <button
-                          className='bg-blue-400 p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'
-                          onClick={() => handleView(row)}>
-                          <RemoveRedEyeIcon fontSize='10px' />
-                        </button>
-                        <button
-                          className='bg-green-400 p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'
-                          onClick={() => handleEdit(row)}>
-                          <EditIcon fontSize='10px' />
-                        </button>
-                        <button
-                          className='bg-red-400 p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'
-                          onClick={() => handleDelete(row.actual_id)}>
-                          <DeleteIcon fontSize='10px' />
-                        </button>
-                        <Link to={'/live-tracking/' + row.id}>
-                          <button className='bg-[#00c0ef] p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'>
-                            <FmdGoodIcon fontSize='10px' />
-                          </button>
-                        </Link>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length + 1} align='center'>
-                    No Data Found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 20]}
-          component='div'
-          count={totalCount}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={(event, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
-            setPage(0);
-          }}
+
+      <form onSubmit={handleFormSubmit} className='mb-4'>
+        <FilterOption
+          handleExport={handleExport}
+          handleExportPDF={handleExportPDF}
+          handleSample={handleSample}
+          handleFormSubmit={handleFormSubmit}
+          filterData={filterData}
+          setFilterData={setFilterData}
+          handleFormReset={handleFormReset}
+          handleFileUpload={handleFileUpload}
+          fileInputRef={fileInputRef}
+          setFile={setFile}
+          routes={vehicleRoutes?.routes}
+          vehicles={vehicleRoutes?.routes}
         />
-      </div>
+      </form>
+
+      <CommonTable
+        columns={columns.map((c) =>
+          c.key === 'status'
+            ? { ...c, render: (_, row) => c.render(_, row, setSelectedVehicle, setIsStatusModalOpen) }
+            : c
+        )}
+        data={tableData}
+        page={page}
+        rowsPerPage={limit}
+        totalCount={totalCount}
+        onPageChange={setPage}
+        onRowsPerPageChange={(val) => {
+          setLimit(val);
+          setPage(0);
+        }}
+        onEdit={handleEdit}
+        onDelete={(row) => handleDelete(row.actual_id)}
+        onView={handleView}
+        extraActions={(row) => (
+          <Link to={`/live-tracking/${row.actual_id}`}>
+            <button className='bg-[#00c0ef] p-2 text-white rounded-[3px] w-5 h-4 cursor-pointer flex justify-center items-center'>
+              <FmdGoodIcon fontSize='10px' />
+            </button>
+          </Link>
+        )}
+      />
     </div>
   );
-};
+}
 
 export default Vehicle;

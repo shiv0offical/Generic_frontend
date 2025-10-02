@@ -1,34 +1,20 @@
 import { TextField } from '@mui/material';
 
-function PasswordPanel() {
+export default function PasswordPanel() {
   return (
     <div className='mt-4'>
-      <TextField
-        label='Current Password'
-        fullWidth
-        variant='outlined'
-        type='password'
-        size='small'
-        sx={{ mb: 3 }}
-        name='currentPassword'
-      />
-      <TextField
-        label='New Password'
-        fullWidth
-        variant='outlined'
-        type='password'
-        size='small'
-        name='newPassword'
-        sx={{ mb: 3 }}
-      />
-      <TextField
-        label='Confirm Password'
-        fullWidth
-        variant='outlined'
-        type='password'
-        name='confirmPassword'
-        size='small'
-      />
+      {['Current', 'New', 'Confirm'].map((label, i) => (
+        <TextField
+          key={label}
+          label={`${label} Password`}
+          name={label === 'Current' ? 'currentPassword' : label === 'New' ? 'newPassword' : 'confirmPassword'}
+          type='password'
+          fullWidth
+          size='small'
+          variant='outlined'
+          sx={i < 2 ? { mb: 3 } : undefined}
+        />
+      ))}
       <button
         type='submit'
         className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer mt-4'>
@@ -37,5 +23,3 @@ function PasswordPanel() {
     </div>
   );
 }
-
-export default PasswordPanel;

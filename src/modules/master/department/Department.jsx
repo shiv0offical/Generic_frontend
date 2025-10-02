@@ -1,42 +1,65 @@
+import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
-import { useState, useEffect } from 'react';
-import IModal from '../../../components/modal/Modal';
 import { useDispatch, useSelector } from 'react-redux';
-import DepartmentForm from './components/DepartmentForm';
+import { toast } from 'react-toastify';
+import { APIURL } from '../../../constants';
+import { ApiService } from '../../../services';
+import {
+  fetchDepartments,
+  fetchDepartmentById,
+  clearSelectedDepartment,
+  deleteDepartment,
+} from '../../../redux/departmentSlice';
+import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
+import IModal from '../../../components/modal/Modal';
+import FilterOptions from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
 import CommanTable from '../../../components/table/CommonTable';
-import { fetchDepartmentById, fetchDepartments } from '../../../redux/departmentSlice';
-import { clearSelectedDepartment, deleteDepartment } from '../../../redux/departmentSlice';
+import DepartmentForm from './components/DepartmentForm';
 
 const columns = [
-  { key: 'id', header: 'ID' },
-  { key: 'name', header: 'Name' },
+  { key: 'id', header: 'Sr No' },
+  { key: 'name', header: 'Department Name' },
   { key: 'createdAt', header: 'Created At' },
 ];
 
-const Department = () => {
+function formatDepartment(data, offset = 0) {
+  return data.map((d, idx) => ({
+    id: offset + idx + 1,
+    departmentId: d.id,
+    name: d.department_name || '-',
+    createdAt: d.created_at ? dayjs(d.created_at).format('YYYY-MM-DD') : '-',
+  }));
+}
+
+function Department() {
   const dispatch = useDispatch();
-  const [page, setPage] = useState(1);
+  const fileInputRef = useRef();
+
+  const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [file, setFile] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
 
-  const { departments, pagination, loading } = useSelector((state) => state.department);
+  const { loading } = useSelector((state) => state.department);
+
+  const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
+    ...(searchQuery?.trim() && { search: searchQuery.trim() }),
+    page: customPage,
+    limit: customLimit,
+  });
 
   useEffect(() => {
-    dispatch(fetchDepartments({ page, limit: rowsPerPage, search: searchQuery }));
-  }, [dispatch, page, rowsPerPage, searchQuery]);
-
-  const formattedDepartments = departments.map((item, idx) => {
-    const formattedDate = dayjs(item.created_at).format('YYYY-MM-DD');
-    return {
-      id: (page - 1) * rowsPerPage + (idx + 1),
-      departmentId: item.id,
-      name: item.department_name,
-      createdAt: formattedDate,
-    };
-  });
+    dispatch(fetchDepartments(buildApiPayload())).then((res) => {
+      setFilteredData(res?.payload?.departments || []);
+      setTotalCount(res?.payload?.pagination?.total ?? res?.payload?.departments?.length ?? 0);
+    });
+    // eslint-disable-next-line
+  }, [dispatch, page, limit, searchQuery]);
 
   const handleEdit = (row) => {
     dispatch(fetchDepartmentById(row.departmentId));
@@ -44,27 +67,119 @@ const Department = () => {
     setSelectedRow(row);
   };
 
-  const handleDelete = (row) => {
-    if (!window.confirm('Are you sure you want to delete this Department ?')) return;
+  const handleDelete = async (row) => {
+    if (!window.confirm('Are you sure you want to delete this Department?')) return;
 
-    dispatch(deleteDepartment(row.departmentId)).then((res) => {
+    try {
+      const res = await dispatch(deleteDepartment(row.departmentId));
       if (res.meta.requestStatus === 'fulfilled') {
-        dispatch(fetchDepartments({ page, limit: rowsPerPage, search: searchQuery }))
+        toast.success('Department deleted successfully!');
+        dispatch(fetchDepartments(buildApiPayload()))
           .unwrap()
           .then((data) => {
-            if (data.departments.length === 0 && page > 1)
-              dispatch(fetchDepartments({ page: page - 1, limit: rowsPerPage, search: searchQuery }));
+            if (data.departments.length === 0 && page > 0) {
+              setPage(page - 1);
+            }
           });
+      } else {
+        toast.error('Failed to delete department');
       }
-    });
+    } catch {
+      toast.error('Delete failed.');
+    }
   };
 
+  const handleFormReset = () => {
+    setSearchQuery('');
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = null;
+    setPage(0);
+  };
+
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!file) return toast.error('Please select a file');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=department`, formData);
+      if (res.success) {
+        toast.success(res.message || 'File uploaded successfully!');
+        if (fileInputRef.current) fileInputRef.current.value = null;
+        setFile(null);
+        dispatch(fetchDepartments(buildApiPayload()));
+      } else {
+        toast.error(res.message || 'Upload failed');
+      }
+    } catch (error) {
+      toast.error('Upload failed.');
+    }
+  };
+
+  // Export only the first 100 departments, properly formatted, using fetchDepartments
+  const handleExport = async () => {
+    try {
+      const exportPayload = buildApiPayload(1, 100);
+      const res = await dispatch(fetchDepartments(exportPayload));
+      const departments = res?.payload?.departments || [];
+
+      if (!departments.length) {
+        toast.error('No data available to export.');
+        return;
+      }
+
+      exportToExcel({
+        columns,
+        rows: buildExportRows({ columns, data: formatDepartment(departments) }),
+        fileName: 'departments.xlsx',
+      });
+    } catch (err) {
+      toast.error('Export failed');
+    }
+  };
+
+  // Export only the first 100 departments to PDF, properly formatted, using fetchDepartments
+  const handleExportPDF = async () => {
+    try {
+      const exportPayload = buildApiPayload(1, 100);
+      const res = await dispatch(fetchDepartments(exportPayload));
+      const departments = res?.payload?.departments || [];
+
+      if (!departments.length) {
+        toast.error('No data available to export.');
+        return;
+      }
+
+      exportToPDF({
+        columns,
+        rows: buildExportRows({ columns, data: formatDepartment(departments) }),
+        fileName: 'departments.pdf',
+        orientation: 'landscape',
+      });
+    } catch (err) {
+      toast.error('Export PDF failed');
+    }
+  };
+
+  // Export a sample Excel file for department import template
+  const handleSample = () =>
+    exportToExcel({
+      columns: [{ key: 'department_name', header: 'Department Name' }],
+      rows: [{}],
+      fileName: 'department_import_sample.xlsx',
+    });
+
+  const tableData = formatDepartment(filteredData, page * limit);
+
   return (
-    <div>
+    <div className='w-full h-full p-2'>
       <IModal
         toggleModal={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
+          setSelectedRow(null);
           dispatch(clearSelectedDepartment());
         }}>
         <DepartmentForm
@@ -74,45 +189,57 @@ const Department = () => {
             setSelectedRow(null);
             dispatch(clearSelectedDepartment());
           }}
-          fetchData={() => dispatch(fetchDepartments({ page, limit: rowsPerPage, search: searchQuery }))}
+          fetchData={() => dispatch(fetchDepartments(buildApiPayload()))}
           data={selectedRow}
         />
       </IModal>
-      <div className='w-full h-full p-2'>
-        <div className='flex justify-between items-center mb-4'>
-          <h1 className='text-2xl font-bold text-[#07163d]'>Departments (Total: {pagination?.total || 0})</h1>
-          <div className='flex justify-between gap-4'>
-            <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-            <button
-              onClick={() => {
-                setIsModalOpen(true);
-              }}
-              type='button'
-              className='text-white bg-[#07163d] hover:bg-[#07163d] focus:outline-none font-medium rounded-sm text-sm px-5 py-2.5 text-center me-2 cursor-pointer'>
-              New Department
-            </button>
-          </div>
-        </div>
-        <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
-          <CommanTable
-            columns={columns}
-            data={formattedDepartments}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            totalCount={pagination?.total || 0}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={(newPage) => setPage(newPage + 1)}
-            onRowsPerPageChange={(newRowsPerPage) => {
-              setRowsPerPage(newRowsPerPage);
-              setPage(1);
+
+      <div className='flex justify-between items-center mb-4'>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Departments (Total: {totalCount})</h1>
+        <div className='flex gap-2'>
+          <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <button
+            onClick={() => {
+              setIsModalOpen(true);
+              setSelectedRow(null);
             }}
-            loading={loading}
-          />
+            type='button'
+            className='text-white bg-[#07163d] hover:bg-[#0a1a4a] focus:outline-none font-medium rounded-sm text-sm px-5 py-2.5 text-center cursor-pointer'>
+            New Department
+          </button>
         </div>
+      </div>
+
+      <FilterOptions
+        handleFormReset={handleFormReset}
+        handleFileUpload={handleFileUpload}
+        setFile={setFile}
+        file={file}
+        handleExport={handleExport}
+        handleExportPDF={handleExportPDF}
+        handleSample={handleSample}
+        fileInputRef={fileInputRef}
+      />
+
+      <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
+        <CommanTable
+          columns={columns}
+          data={tableData}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          totalCount={totalCount}
+          page={page}
+          rowsPerPage={limit}
+          onPageChange={setPage}
+          onRowsPerPageChange={(val) => {
+            setLimit(val);
+            setPage(0);
+          }}
+          loading={loading}
+        />
       </div>
     </div>
   );
-};
+}
 
 export default Department;

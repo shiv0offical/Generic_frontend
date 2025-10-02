@@ -1,45 +1,57 @@
-import moment from 'moment';
 import Chart from 'react-apexcharts';
+import moment from 'moment';
 
 const OverSpeedChart = ({ data }) => {
+  const rawData = Array.isArray(data) ? data : data?.data || [];
   const vehicleMap = {};
 
-  (data?.data || []).forEach((item) => {
-    const vehicleNo = item?.vehicle?.vehicle_number || 'Unknown Vehicle';
-    const time = item?.entry_time || null;
-    const speed = item?.max_speed || 0;
-
+  rawData.forEach((item) => {
+    const vehicleNo = item?.vehicle?.vehicle_number || item?.vehicle_number || 'Unknown Vehicle';
     if (!vehicleMap[vehicleNo]) vehicleMap[vehicleNo] = [];
-    if (time) vehicleMap[vehicleNo].push({ x: moment(time).toISOString(), y: speed });
+    if (item?.entry_time) vehicleMap[vehicleNo].push({ x: moment(item.entry_time).toDate(), y: item?.max_speed || 0 });
   });
 
-  const series = Object.keys(vehicleMap).map((vehicleNo) => ({ name: vehicleNo, data: vehicleMap[vehicleNo] }));
+  const series = Object.keys(vehicleMap).map((v) => ({
+    name: v,
+    data: vehicleMap[v].sort((a, b) => a.x - b.x),
+    color: `hsl(210, 70%, ${60 + ((Object.keys(vehicleMap).indexOf(v) * 20) % 30)}%)`,
+  }));
+
+  const allDates = rawData
+    .map((i) => i?.entry_time)
+    .filter(Boolean)
+    .map((d) => new Date(d));
+  const minDate = allDates.length ? Math.min(...allDates) : undefined;
+  const maxDate = allDates.length ? Math.max(...allDates) : undefined;
+
   const options = {
-    chart: { type: 'line', zoom: { enabled: false } },
-    title: { text: 'Overspeed', align: 'center' },
-    xaxis: { type: 'datetime', categories: ['2025-02-19T01:00:00', '2025-02-19T02:00:00', '2025-02-19T03:00:00'] },
-    yaxis: { title: { text: 'Speed (km/h)' } },
-    markers: { size: 6 },
-    stroke: { curve: 'smooth', width: 2 },
-    legend: { position: 'bottom' },
+    chart: { type: 'line', zoom: { enabled: true }, toolbar: { show: true } },
+    title: { text: 'Overspeed Events by Vehicle', align: 'center', style: { fontSize: 20, fontWeight: 'bold' } },
+    xaxis: {
+      type: 'datetime',
+      title: { text: 'Time' },
+      min: minDate,
+      max: maxDate,
+      labels: { datetimeFormatter: { year: 'yyyy', month: "MMM 'yy", day: 'dd MMM', hour: 'HH:mm' } },
+      tooltip: { enabled: true },
+    },
+    yaxis: { title: { text: 'Speed (km/h)' }, min: 0, labels: { formatter: (val) => Math.round(val) } },
+    markers: { size: 6, hover: { size: 8 } },
+    stroke: { curve: 'smooth', width: 3 },
+    legend: { position: 'bottom', horizontalAlign: 'center', fontSize: 14, markers: { width: 16, height: 16 } },
+    tooltip: {
+      x: { format: 'dd MMM yyyy HH:mm' },
+      y: { formatter: (val) => `${val} km/h` },
+    },
+    grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } },
   };
 
-  // const series = [
-  //   {
-  //     name: "TN67E5768",
-  //     data: [88, 96, 84],
-  //     color: "#007bff",
-  //   },
-  //   {
-  //     name: "TN87E5678",
-  //     data: [79, 80, 82],
-  //     color: "#00c49f",
-  //   },
-  // ];
-
   return (
-    <div>
+    <div className='p-2'>
       <Chart options={options} series={series} type='line' height={350} />
+      {!series.length && (
+        <div style={{ textAlign: 'center', marginTop: 20, color: '#888' }}>No overspeed data available.</div>
+      )}
     </div>
   );
 };

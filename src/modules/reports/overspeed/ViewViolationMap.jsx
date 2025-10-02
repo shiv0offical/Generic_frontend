@@ -2,17 +2,17 @@ import { Link } from 'react-router-dom';
 
 function ViewViolationMap() {
   const location = '22.5726,88.3639';
-  const mapUrl = `https://www.google.com/maps/embed/v1/view?zoom=12&center=${location}&key=AIzaFakeKey`;
+
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>View Violation Map</h1>
+        <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Violation Map View</h1>
         <div className='flex'>
           <Link to='/report/overspeed'>
             <button
               type='button'
               className='text-white bg-[#07163d] hover:bg-[#07163d] focus:outline-none font-medium rounded-sm text-sm px-5 py-2.5 text-center me-2 mb-2 cursor-pointer'>
-              Back
+              Return
             </button>
           </Link>
         </div>

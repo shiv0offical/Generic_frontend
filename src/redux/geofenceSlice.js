@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { ApiService } from '../services';
 
-export const vehicleGeofenceReport = createAsyncThunk('geofence/getVehicleGeofence', async (thunkAPI) => {
+export const vehicleGeofenceReport = createAsyncThunk('geofence/getVehicleGeofence', async (params = {}, thunkAPI) => {
   try {
-    const res = await ApiService.get('geofenceReport');
+    const res = await ApiService.get('geofenceReport', params);
     return res.data;
   } catch (error) {
     return thunkAPI.rejectWithValue(error.message);
@@ -19,24 +19,14 @@ export const fetchGeofenceType = createAsyncThunk('geofence/geofenceTypeData', a
   }
 });
 
-export const fetchGeoToGeoFence = createAsyncThunk(
-  'geofence/geoToGeoFence',
-  async ({ company_id, vehicle_id, start_geofence, end_geofence, start_time, end_time }, thunkAPI) => {
-    try {
-      const res = await ApiService.get('geofencetogeofence', {
-        company_id,
-        vehicle_id,
-        start_geofence,
-        end_geofence,
-        start_time,
-        end_time,
-      });
-      return res;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
+export const fetchGeoToGeoFence = createAsyncThunk('geofence/geoToGeoFence', async (params, thunkAPI) => {
+  try {
+    const res = await ApiService.get('geofencetogeofence', params);
+    return res;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.message);
   }
-);
+});
 
 const initialState = {
   GeoToGeoReportData: [],
